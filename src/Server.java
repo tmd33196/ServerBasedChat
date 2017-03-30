@@ -1,8 +1,8 @@
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
+import java.util.Arrays;
+import java.util.Random;
 
 /*
  * Server class for the server based chat project
@@ -13,8 +13,12 @@ public class Server {
     private ServerSocket ss = null;
     private DataInputStream input = null;
     
+    private DatagramSocket serverSocket;
+    byte[] receiveData = new byte[1024];
+    byte[] sendData = new byte[1024];
+    
     public Server(int port) {
-        try {
+        /*try {
             ss = new ServerSocket(port);
             System.out.println("Server started:" + ss);
             System.out.println("Waiting for client...");
@@ -37,6 +41,51 @@ public class Server {
             if(ss!=null) ss.close();
         }catch(Exception e){
             System.out.println(e);
+        }*/
+        
+        try {
+            serverSocket = new DatagramSocket(port);
+        }catch(Exception e){
+            System.out.println(e);
+        }
+        
+        int nextPort = port + 1;
+        Random random = new Random(System.nanoTime());
+        
+        while(true) {
+            try {
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                serverSocket.receive(receivePacket);
+                String data = new String( receivePacket.getData());
+                String output = data;
+                System.out.println("RECEIVED: " + data);
+                
+                //Parse the input
+                String[] dataArray = data.split("[()]");
+                for(int a = 0; a < dataArray.length; a ++) {
+                    dataArray[a] = dataArray[a].trim().toUpperCase();
+                }
+                
+                switch(dataArray[0]) {
+                    case ("HELLO"):
+                        //TODO verify the client is on the list of clients
+                        output = "CHALLENGE(" + random.nextInt(1000) + ")";
+                        break;
+                    case ("RESPONSE"):
+                        //TODO: do authentication
+                        output = "AUTH_SUCCESS(" + random.nextInt(100) + ", " + nextPort++ + ")";
+                        //TODO: encrypt string
+                        break;
+                }
+                
+                InetAddress returnIPAddress = receivePacket.getAddress();
+                int returnPort = receivePacket.getPort();
+                sendData = output.getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, returnIPAddress, returnPort);
+                serverSocket.send(sendPacket);
+            }catch(Exception e) {
+                System.out.println(e);
+            }
         }
     }
     
