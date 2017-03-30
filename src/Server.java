@@ -30,13 +30,13 @@ public class Server {
                     System.out.println(line);
                     done = line.equals("bye");
                 }catch(Exception e){
-                    e.printStackTrace();
+                    System.out.println(e);
                 }
             }
             if(socket!=null) socket.close();
             if(ss!=null) ss.close();
         }catch(Exception e){
-            e.printStackTrace();
+            System.out.println(e);
         }
     }
     
