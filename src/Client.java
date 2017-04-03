@@ -1,104 +1,146 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.Arrays;
 
 /*
  * Client class for the server based chat project
  */
 
 public class Client {
-    private Socket socket = null;
-    private BufferedReader console = null;
-    private DataOutputStream output = null;
     
-    public Client(String clientName, String serverName, int serverPort){
+    private final String clientName;
+    private final String serverName;
+    private final int serverPort;
+    
+    BufferedReader inFromUser;
+    
+    private DatagramSocket clientSocket;
+    private InetAddress IPAddress;
+    
+    //Sets the class variables and starts the log on process
+    public Client(String _clientName, String _serverName, int _serverPort){
+        this.clientName = _clientName;
+        this.serverName = _serverName;
+        this.serverPort = _serverPort;
+        
         System.out.println("Connecting...");
         
-        while(!connect(clientName, serverName, serverPort)) {
+        //Continues to try to log on until it is successful
+        while(!connect()) {
             System.out.println("Try to log on again");
         }
         
-        System.out.println("Connected");
-        /*try{
-            socket = new Socket(serverName, serverPort);
-            System.out.println("Connected");
-            console = new BufferedReader(new InputStreamReader(System.in));
-            output = new DataOutputStream(socket.getOutputStream());
-        }catch(UnknownHostException uhe){
-            System.out.println("Host unknown: " + uhe.getMessage());
-        }
-        catch(Exception e){
-            System.out.println(e);
-        }
-        
-        String line = "";
-        while(!line.equals("bye")){
-            try{
-                System.out.println("Send message to server....");
-                line = console.readLine();
-                System.out.println(line);
-                output.writeUTF(line);
-                output.flush();
-            }catch(Exception e){
-                System.out.println(e);
-            }
-        }
-        try{
-            if(socket != null) socket.close();
-            if(console != null) console.close();
-            if(output != null) output.close();
-        }catch(Exception e){
-            System.out.println(e);
-        }*/
-        
-        
+        //Client is done with the chat server
+        System.out.println("Done");
     }
     
-    private boolean connect(String clientName, String serverName, int serverPort) {
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-        byte[] sendData = new byte[1024];
-        byte[] receiveData = new byte[1024];
+    /*Method to connect to the server
+     *Returns:  false on an error connecting
+     *          true when the process is done
+     */
+    private boolean connect() {
+        //Creates the user input reader
+        inFromUser = new BufferedReader(new InputStreamReader(System.in));
         
         try {
-            DatagramSocket clientSocket = new DatagramSocket();
-            InetAddress IPAddress = InetAddress.getByName(serverName);
+            clientSocket = new DatagramSocket();
+            IPAddress = InetAddress.getByName(serverName);
             
             String sentence = inFromUser.readLine();
-            
             if(sentence.toUpperCase().equals("LOG ON")) {
+                //HELLO to the server
                 String sendString = "HELLO (" + clientName + ")";
-                sendData = sendString.getBytes();
-                
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, serverPort);
-                clientSocket.send(sendPacket);
-                
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                clientSocket.receive(receivePacket);
+                sendString(sendString);
             
-                String response = new String(receivePacket.getData());
+                String response = receiveString();
                 System.out.println("FROM SERVER:" + response);
                 
-                String[] dataArray = response.split("[()]");
+                String[] dataArray = response.split("[()]+");
                 for(int a = 0; a < dataArray.length; a ++) {
                     dataArray[a] = dataArray[a].trim().toUpperCase();
                 }
                 
+                //RESPONSE to server
                 if(dataArray[0].equals("CHALLENGE")) {
-                    //TODO response
+                    //TODO calculate response
+                    sendString = "RESPONSE(" + 1 + ")";
                 }
+                else {
+                    System.out.println("Error in server response");
+                    return false;
+                }
+                
+                sendString(sendString);
+                response = receiveString();
+                System.out.println("FROM SERVER:" + response);
+                
+                dataArray = response.split("[(), ]+");
+                for(int a = 0; a < dataArray.length; a ++) {
+                    dataArray[a] = dataArray[a].trim().toUpperCase();
+                }
+                
+                //Switches to TCP
+                if(dataArray[0].equals("AUTH_SUCCESS")) {
+                    System.out.println(Arrays.toString(dataArray));
+                    runTCPClient(Integer.parseInt(dataArray[2]));
+                }
+                else {
+                    System.out.println("Error in server response");
+                    return false;
+                }
+                
             }
             else {
-                System.out.println("Please type log in");
+                System.out.println("Please type log on");
                 clientSocket.close();
                 return false;
             }
             
             clientSocket.close();
             
-        }catch(Exception e) {
+        }catch(IOException | NumberFormatException e) {
             System.out.println(e);
         }
         return true;
+    }
+    
+    //Sends a string to the UDP server
+    private void sendString(String message) throws IOException {
+        byte[] sendData = message.getBytes();      
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, serverPort);
+        clientSocket.send(sendPacket);
+    }
+    
+    //Receives a string from the UDP server
+    private String receiveString() throws IOException {
+        byte[] receiveData = new byte[1024];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
+            
+        return new String(receivePacket.getData());
+    }
+    
+    private void runTCPClient(int port) {
+        String sendString;
+        String receiveString;
+        
+        try {
+            System.out.println("Connecting to: " + port);
+            Socket TCPClientSocket = new Socket(serverName, port);
+            DataOutputStream outToServer = new DataOutputStream(TCPClientSocket.getOutputStream());
+            DataInputStream inFromServer = new DataInputStream(new BufferedInputStream(TCPClientSocket.getInputStream()));
+            
+            sendString = "CONNECT(123)";
+            outToServer.writeUTF(sendString);
+            outToServer.flush();
+            
+            receiveString = inFromServer.readUTF();
+            System.out.println("FROM SERVER: " + receiveString);
+            TCPClientSocket.close();   
+        }catch(Exception e) {
+            System.out.println(e);
+        }
     }
     
     public static void main(String args[]){
