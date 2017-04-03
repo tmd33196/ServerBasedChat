@@ -1,5 +1,6 @@
 
 import java.net.*;
+import java.util.HashMap;
 import java.util.Random;
 
 /*
@@ -8,15 +9,23 @@ import java.util.Random;
 
 public class Server {
     
+    private HashMap<String, String> secretKeys;
+    private HashMap<String, String> xRES;
+    
     private DatagramSocket serverSocket;
     byte[] receiveData = new byte[1024];
     byte[] sendData = new byte[1024];
     
-    public Server(int port) {        
+    public Server(int port) { 
+        secretKeys = new HashMap<>();
+        xRES = new HashMap<>();
+        secretKeys.put("A", "1234");
+        
         try {
             serverSocket = new DatagramSocket(port);
         }catch(Exception e){
             System.out.println(e);
+            return;
         }
         
         int nextPort = port + 1;
@@ -33,7 +42,7 @@ public class Server {
                 System.out.println("RECEIVED: " + data);
                 
                 //Parse the input
-                String[] dataArray = data.split("[()]");
+                String[] dataArray = data.split("[(), ]+");
                 for(int a = 0; a < dataArray.length; a ++) {
                     dataArray[a] = dataArray[a].trim().toUpperCase();
                 }
@@ -41,18 +50,34 @@ public class Server {
                 //Switch on the command
                 switch(dataArray[0]) {
                     case ("HELLO"):
-                        //TODO verify the client is on the list of clients
-                        //TODO authentication
-                        output = "CHALLENGE(" + random.nextInt(1000) + ")";
+                        //dataArray[1] contains the clientID
+                        String secretKey = secretKeys.get(dataArray[1]);
+                        if(secretKey != null) {
+                            String ran = Integer.toString(random.nextInt(1000));
+                            xRES.put(dataArray[1], A3(ran, secretKey));
+                            output = "CHALLENGE(" + ran + ")";
+                        }
+                        else {
+                            System.out.println("ERROR: client not in the list of clients");
+                            output = "ERROR: Not on client list";
+                        }
+                        
                         break;
                     case ("RESPONSE"):
-                        //TODO: if data[1] == calculated authentication value
+                        //dataArray[1] contains the clientID
+                        //dataArray[2] contains the RES
                         
-                        TCPServerThread tcp = new TCPServerThread(nextPort);
-                        Thread thread = new Thread(tcp);
-                        thread.start();
-                        
-                        output = "AUTH_SUCCESS(" + random.nextInt(100) + ", " + nextPort++ + ")";
+                        if(xRES.get(dataArray[1]).equals(dataArray[2])) {
+                            TCPServerThread tcp = new TCPServerThread(nextPort);
+                            Thread thread = new Thread(tcp);
+                            thread.start();
+
+                            output = "AUTH_SUCCESS(" + random.nextInt(100) + ", " + nextPort++ + ")";
+                        }
+                        else {
+                            System.out.println("ERROR: Client response did not match xRES");
+                            output = "ERROR: Client response did not match xRES";
+                        }
                         
                         //TODO: encrypt string
                         break;
@@ -68,6 +93,10 @@ public class Server {
                 System.out.println(e);
             }
         }
+    }
+    
+    private String A3(String random, String secretKey) {
+        return random + secretKey;
     }
     
     public static void main(String args[]){

@@ -10,6 +10,7 @@ import java.util.Arrays;
 public class Client {
     
     private final String clientName;
+    private final String clientSecretKey;
     private final String serverName;
     private final int serverPort;
     
@@ -19,8 +20,9 @@ public class Client {
     private InetAddress IPAddress;
     
     //Sets the class variables and starts the log on process
-    public Client(String _clientName, String _serverName, int _serverPort){
+    public Client(String _clientName, String _clientSecretKey, String _serverName, int _serverPort){
         this.clientName = _clientName;
+        this.clientSecretKey = _clientSecretKey;
         this.serverName = _serverName;
         this.serverPort = _serverPort;
         
@@ -63,11 +65,11 @@ public class Client {
                 
                 //RESPONSE to server
                 if(dataArray[0].equals("CHALLENGE")) {
-                    //TODO calculate response
-                    sendString = "RESPONSE(" + 1 + ")";
+                    String xRES = A3(dataArray[1], clientSecretKey);
+                    sendString = "RESPONSE(" + clientName + ", " + xRES + ")";
                 }
                 else {
-                    System.out.println("Error in server response");
+                    System.out.println("Error in server response\n" + response);
                     return false;
                 }
                 
@@ -86,7 +88,7 @@ public class Client {
                     runTCPClient(Integer.parseInt(dataArray[2]));
                 }
                 else {
-                    System.out.println("Error in server response");
+                    System.out.println("Error in server response\n" + response);
                     return false;
                 }
                 
@@ -121,9 +123,14 @@ public class Client {
         return new String(receivePacket.getData());
     }
     
+    //Performs A3 encryption
+    private String A3(String random, String secretKey) {
+        return random + secretKey;
+    }
+    
     private void runTCPClient(int port) {
-        String sendString;
-        String receiveString;
+        String outToServerString;
+        String inFromServerString;
         
         try {
             System.out.println("Connecting to: " + port);
@@ -131,12 +138,12 @@ public class Client {
             DataOutputStream outToServer = new DataOutputStream(TCPClientSocket.getOutputStream());
             DataInputStream inFromServer = new DataInputStream(new BufferedInputStream(TCPClientSocket.getInputStream()));
             
-            sendString = "CONNECT(123)";
-            outToServer.writeUTF(sendString);
+            outToServerString = "CONNECT(123)";
+            outToServer.writeUTF(outToServerString);
             outToServer.flush();
             
-            receiveString = inFromServer.readUTF();
-            System.out.println("FROM SERVER: " + receiveString);
+            inFromServerString = inFromServer.readUTF();
+            System.out.println("FROM SERVER: " + inFromServerString);
             TCPClientSocket.close();   
         }catch(Exception e) {
             System.out.println(e);
@@ -146,9 +153,9 @@ public class Client {
     public static void main(String args[]){
         Client client = null;
         
-        if(args.length != 3)
-            System.out.println("Use correct input, client name, host name, port number");
+        if(args.length != 4)
+            System.out.println("Use correct input, client name, client key, host name, port number");
         else
-            client = new Client(args[0], args[1], Integer.parseInt(args[2]));
+            client = new Client(args[0], args[1], args[2], Integer.parseInt(args[3]));
     }
 }
