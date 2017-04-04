@@ -11,6 +11,7 @@ public class Server {
     
     private HashMap<String, String> secretKeys;
     private HashMap<String, String> xRES;
+    private HashMap<String, String> CK_A;
     
     private DatagramSocket serverSocket;
     byte[] receiveData = new byte[1024];
@@ -19,6 +20,7 @@ public class Server {
     public Server(int port) { 
         secretKeys = new HashMap<>();
         xRES = new HashMap<>();
+        CK_A = new HashMap<>();
         secretKeys.put("A", "1234");
         
         try {
@@ -55,6 +57,7 @@ public class Server {
                         if(secretKey != null) {
                             String ran = Integer.toString(random.nextInt(1000));
                             xRES.put(dataArray[1], A3(ran, secretKey));
+                            CK_A.put(dataArray[1], A8(ran, secretKey));
                             output = "CHALLENGE(" + ran + ")";
                         }
                         else {
@@ -68,15 +71,16 @@ public class Server {
                         //dataArray[2] contains the RES
                         
                         if(xRES.get(dataArray[1]).equals(dataArray[2])) {
-                            TCPServerThread tcp = new TCPServerThread(nextPort);
+                            TCPServerThread tcp = new TCPServerThread(nextPort, CK_A.get(dataArray[1]));
                             Thread thread = new Thread(tcp);
                             thread.start();
 
-                            output = "AUTH_SUCCESS(" + random.nextInt(100) + ", " + nextPort++ + ")";
+                            output = "AUTH_SUCCESS(" + random.nextInt(1000) + ", " + nextPort++ + ")";
+                            output = encrypt(output, CK_A.get(dataArray[1]));
                         }
                         else {
                             System.out.println("ERROR: Client response did not match xRES");
-                            output = "ERROR: Client response did not match xRES";
+                            output = "AUTH_FAIL";
                         }
                         
                         //TODO: encrypt string
@@ -95,8 +99,20 @@ public class Server {
         }
     }
     
+    //Performs A3 encryption
     private String A3(String random, String secretKey) {
+        //A3: RES = hash1(rand + K_A)
         return random + secretKey;
+    }
+    
+    //Generate the ciphering key
+    private String A8(String random, String secretKey) {
+        //A8: CK_A = hash2(rand + K_A)
+        return random + secretKey;
+    }
+    
+    private String encrypt(String message, String CKA) {
+        return message;
     }
     
     public static void main(String args[]){

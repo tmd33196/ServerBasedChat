@@ -7,10 +7,12 @@ import java.net.*;
 
 public class TCPServerThread implements Runnable{
     ServerSocket welcomeSocket;
-    int port;
+    private final int port;
+    private final String CK_A;
     
-    public TCPServerThread(int port) {
+    public TCPServerThread(int port, String CK_A) {
         this.port = port;
+        this.CK_A = CK_A;
         try {
             welcomeSocket = new ServerSocket(port);
             System.out.println("Created TCP on: " + port);
@@ -21,8 +23,8 @@ public class TCPServerThread implements Runnable{
     
     public void run() {
         System.out.println("Listening on: " + port);
-        String inFromClientSentence;
-        String outToClientSentence;
+        String inFromClientString;
+        String outToClientString;
         
         while(true)
         {
@@ -32,15 +34,26 @@ public class TCPServerThread implements Runnable{
                 DataInputStream inFromClient = new DataInputStream(new BufferedInputStream(connectionSocket.getInputStream()));
                 DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
                 
-                inFromClientSentence = inFromClient.readUTF();
-                System.out.println("Received: " + inFromClientSentence);
+                inFromClientString = inFromClient.readUTF();
+                System.out.println("Received: " + inFromClientString);
+                inFromClientString = decrypt(inFromClientString, CK_A);
+                System.out.println("Decrypted Received: " + inFromClientString);
                 
-                outToClientSentence = "CONNECTED";
-                outToClient.writeUTF(outToClientSentence);
+                outToClientString = "CONNECTED";
+                outToClientString = encrypt(outToClientString, CK_A);
+                outToClient.writeUTF(outToClientString);
                 connectionSocket.close();
             } catch(Exception e) {
                 System.out.println(e);
             }
         }
+    }
+    
+    private String encrypt(String message, String CKA) {
+        return message;
+    }
+    
+    private String decrypt(String message, String CKA) {
+        return message;
     }
 }

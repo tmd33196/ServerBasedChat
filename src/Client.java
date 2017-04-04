@@ -13,6 +13,7 @@ public class Client {
     private final String clientSecretKey;
     private final String serverName;
     private final int serverPort;
+    private String CK_A;
     
     BufferedReader inFromUser;
     
@@ -66,6 +67,7 @@ public class Client {
                 //RESPONSE to server
                 if(dataArray[0].equals("CHALLENGE")) {
                     String xRES = A3(dataArray[1], clientSecretKey);
+                    CK_A = A8(dataArray[1], clientSecretKey);
                     sendString = "RESPONSE(" + clientName + ", " + xRES + ")";
                 }
                 else {
@@ -76,6 +78,8 @@ public class Client {
                 sendString(sendString);
                 response = receiveString();
                 System.out.println("FROM SERVER:" + response);
+                response = decrypt(response, CK_A);
+                System.out.println("Decrypted FROM SERVER:" + response);
                 
                 dataArray = response.split("[(), ]+");
                 for(int a = 0; a < dataArray.length; a ++) {
@@ -85,7 +89,7 @@ public class Client {
                 //Switches to TCP
                 if(dataArray[0].equals("AUTH_SUCCESS")) {
                     System.out.println(Arrays.toString(dataArray));
-                    runTCPClient(Integer.parseInt(dataArray[2]));
+                    runTCPClient(dataArray[1], Integer.parseInt(dataArray[2]));
                 }
                 else {
                     System.out.println("Error in server response\n" + response);
@@ -125,10 +129,25 @@ public class Client {
     
     //Performs A3 encryption
     private String A3(String random, String secretKey) {
+        //A3: RES = hash1(rand + K_A)
         return random + secretKey;
     }
     
-    private void runTCPClient(int port) {
+    //Generate the ciphering key
+    private String A8(String random, String secretKey) {
+        //A8: CK_A = hash2(rand + K_A)
+        return random + secretKey;
+    }
+    
+    private String encrypt(String message, String CKA) {
+        return message;
+    }
+    
+    private String decrypt(String message, String CKA) {
+        return message;
+    }
+    
+    private void runTCPClient(String cookie, int port) {
         String outToServerString;
         String inFromServerString;
         
@@ -138,12 +157,15 @@ public class Client {
             DataOutputStream outToServer = new DataOutputStream(TCPClientSocket.getOutputStream());
             DataInputStream inFromServer = new DataInputStream(new BufferedInputStream(TCPClientSocket.getInputStream()));
             
-            outToServerString = "CONNECT(123)";
+            outToServerString = "CONNECT(" + cookie + ")";
+            outToServerString = encrypt(outToServerString, CK_A);
             outToServer.writeUTF(outToServerString);
             outToServer.flush();
             
             inFromServerString = inFromServer.readUTF();
             System.out.println("FROM SERVER: " + inFromServerString);
+            inFromServerString = decrypt(inFromServerString, CK_A);
+            System.out.println("Decrypted FROM SERVER: " + inFromServerString);
             TCPClientSocket.close();   
         }catch(Exception e) {
             System.out.println(e);
