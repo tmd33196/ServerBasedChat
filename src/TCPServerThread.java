@@ -42,6 +42,23 @@ public class TCPServerThread implements Runnable{
                 outToClientString = "CONNECTED";
                 outToClientString = encrypt(outToClientString, CK_A);
                 outToClient.writeUTF(outToClientString);
+                
+                inFromClientString = inFromClient.readUTF();
+                System.out.println("Received: " + inFromClientString);
+                inFromClientString = decrypt(inFromClientString, CK_A);
+                System.out.println("Decrypted Received: " + inFromClientString);
+                
+                while(!inFromClientString.toUpperCase().equals("Log Off")) {
+                    if(inFromClientString.split("[()]")[0].equals("CHAT_REQUEST")) {
+                        String user = inFromClientString.split("[()]")[1];
+                        System.out.println("Create chat with " + user);
+                    }
+                    inFromClientString = inFromClient.readUTF();
+                    System.out.println("Received: " + inFromClientString);
+                    inFromClientString = decrypt(inFromClientString, CK_A);
+                    System.out.println("Decrypted Received: " + inFromClientString);
+                }
+                
                 connectionSocket.close();
             } catch(Exception e) {
                 System.out.println(e);

@@ -22,6 +22,7 @@ public class Server {
         xRES = new HashMap<>();
         CK_A = new HashMap<>();
         secretKeys.put("A", "1234");
+        secretKeys.put("B", "1234");
         
         try {
             serverSocket = new DatagramSocket(port);

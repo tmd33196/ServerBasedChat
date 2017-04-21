@@ -166,6 +166,24 @@ public class Client {
             System.out.println("FROM SERVER: " + inFromServerString);
             inFromServerString = decrypt(inFromServerString, CK_A);
             System.out.println("Decrypted FROM SERVER: " + inFromServerString);
+            
+            String line = inFromUser.readLine();
+            while(true) {
+                if(line.equals("Log Off")) {
+                    outToServerString = encrypt(line, CK_A);
+                    outToServer.writeUTF(outToServerString);
+                    outToServer.flush();
+                    break;
+                }else if(line.contains("Chat")) {
+                    outToServerString = "CHAT_REQUEST(" + line.split("[ ]")[1] + ")";
+                    outToServerString = encrypt(outToServerString, CK_A);
+                    outToServer.writeUTF(outToServerString);
+                    outToServer.flush();
+                }else {
+                    System.out.println("Please type Log Off or Chat [Client-ID]");
+                }
+                line = inFromUser.readLine();
+            }
             TCPClientSocket.close();   
         }catch(Exception e) {
             System.out.println(e);
