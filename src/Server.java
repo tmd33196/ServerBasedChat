@@ -9,20 +9,24 @@ import java.util.Random;
 
 public class Server {
     
-    private HashMap<String, String> secretKeys;
+    /*private HashMap<String, String> secretKeys;
     private HashMap<String, String> xRES;
-    private HashMap<String, String> CK_A;
+    private HashMap<String, String> CK_A;*/
     
     private DatagramSocket serverSocket;
     byte[] receiveData = new byte[1024];
     byte[] sendData = new byte[1024];
     
     public Server(int port) { 
-        secretKeys = new HashMap<>();
+        /*secretKeys = new HashMap<>();
         xRES = new HashMap<>();
         CK_A = new HashMap<>();
         secretKeys.put("A", "1234");
-        secretKeys.put("B", "1234");
+        secretKeys.put("B", "1234");*/
+        
+        ConnectedClients cc = new ConnectedClients();
+        cc.addSecretKey("A", "1234");
+        cc.addSecretKey("B", "1234");
         
         try {
             serverSocket = new DatagramSocket(port);
@@ -54,11 +58,14 @@ public class Server {
                 switch(dataArray[0]) {
                     case ("HELLO"):
                         //dataArray[1] contains the clientID
-                        String secretKey = secretKeys.get(dataArray[1]);
+                        //String secretKey = secretKeys.get(dataArray[1]);
+                        String secretKey = cc.getSecretKey(dataArray[1]);
                         if(secretKey != null) {
                             String ran = Integer.toString(random.nextInt(1000));
-                            xRES.put(dataArray[1], A3(ran, secretKey));
-                            CK_A.put(dataArray[1], A8(ran, secretKey));
+                            //xRES.put(dataArray[1], A3(ran, secretKey));
+                            //CK_A.put(dataArray[1], A8(ran, secretKey));
+                            cc.addXRES(dataArray[1], A3(ran, secretKey));
+                            cc.addCKA(dataArray[1], A8(ran, secretKey));
                             output = "CHALLENGE(" + ran + ")";
                         }
                         else {
@@ -71,13 +78,14 @@ public class Server {
                         //dataArray[1] contains the clientID
                         //dataArray[2] contains the RES
                         
-                        if(xRES.get(dataArray[1]).equals(dataArray[2])) {
-                            TCPServerThread tcp = new TCPServerThread(nextPort, CK_A.get(dataArray[1]));
+                        //if(xRES.get(dataArray[1]).equals(dataArray[2])) {
+                        if(cc.getXRES(dataArray[1]).equals(dataArray[2])) {
+                            TCPServerThread tcp = new TCPServerThread(nextPort, dataArray[1], cc);//CK_A.get(dataArray[1]));
                             Thread thread = new Thread(tcp);
                             thread.start();
 
                             output = "AUTH_SUCCESS(" + random.nextInt(1000) + ", " + nextPort++ + ")";
-                            output = encrypt(output, CK_A.get(dataArray[1]));
+                            output = encrypt(output, cc.getCKA(dataArray[1]));//CK_A.get(dataArray[1]));
                         }
                         else {
                             System.out.println("ERROR: Client response did not match xRES");

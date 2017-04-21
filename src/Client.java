@@ -169,7 +169,7 @@ public class Client {
             
             String line = inFromUser.readLine();
             while(true) {
-                if(line.equals("Log Off")) {
+                if(line.toUpperCase().equals("LOG OFF")) {
                     outToServerString = encrypt(line, CK_A);
                     outToServer.writeUTF(outToServerString);
                     outToServer.flush();
@@ -179,6 +179,34 @@ public class Client {
                     outToServerString = encrypt(outToServerString, CK_A);
                     outToServer.writeUTF(outToServerString);
                     outToServer.flush();
+                    
+                    inFromServerString = inFromServer.readUTF();
+                    System.out.println("FROM SERVER: " + inFromServerString);
+                    inFromServerString = decrypt(inFromServerString, CK_A);
+                    System.out.println("Decrypted FROM SERVER: " + inFromServerString);
+                    
+                    if(inFromServerString.contains("UNREACHABLE")) {
+                        System.out.println("Client " + line.split("[( )]")[1] + " is currently ureachable");
+                    }else {
+                        System.out.println("Chat started");
+                        String sessionID = line.split("[( ),]+")[1];
+                        
+                        while(true) {
+                            line = inFromUser.readLine();
+                            
+                            if(line.equals("End Chat")) {
+                                outToServerString = encrypt("END_REQUEST(" + sessionID + ")", CK_A);
+                                outToServer.writeUTF(outToServerString);
+                                outToServer.flush();
+                                break;
+                            }else {
+                                outToServerString = encrypt(line, CK_A);
+                                outToServer.writeUTF(outToServerString);
+                                outToServer.flush();
+                            }
+                        }
+                    }
+                    
                 }else {
                     System.out.println("Please type Log Off or Chat [Client-ID]");
                 }

@@ -8,11 +8,13 @@ import java.net.*;
 public class TCPServerThread implements Runnable{
     ServerSocket welcomeSocket;
     private final int port;
-    private final String CK_A;
+    private ConnectedClients cc;
+    private final String client;
     
-    public TCPServerThread(int port, String CK_A) {
+    public TCPServerThread(int port, String client, ConnectedClients cc) {
         this.port = port;
-        this.CK_A = CK_A;
+        this.cc = cc;
+        this.client = client;
         try {
             welcomeSocket = new ServerSocket(port);
             System.out.println("Created TCP on: " + port);
@@ -36,27 +38,53 @@ public class TCPServerThread implements Runnable{
                 
                 inFromClientString = inFromClient.readUTF();
                 System.out.println("Received: " + inFromClientString);
-                inFromClientString = decrypt(inFromClientString, CK_A);
+                inFromClientString = decrypt(inFromClientString, cc.getCKA(client));
                 System.out.println("Decrypted Received: " + inFromClientString);
                 
                 outToClientString = "CONNECTED";
-                outToClientString = encrypt(outToClientString, CK_A);
+                outToClientString = encrypt(outToClientString, cc.getCKA(client));
                 outToClient.writeUTF(outToClientString);
                 
-                inFromClientString = inFromClient.readUTF();
-                System.out.println("Received: " + inFromClientString);
-                inFromClientString = decrypt(inFromClientString, CK_A);
-                System.out.println("Decrypted Received: " + inFromClientString);
                 
-                while(!inFromClientString.toUpperCase().equals("Log Off")) {
-                    if(inFromClientString.split("[()]")[0].equals("CHAT_REQUEST")) {
-                        String user = inFromClientString.split("[()]")[1];
-                        System.out.println("Create chat with " + user);
-                    }
+                while(true) {
                     inFromClientString = inFromClient.readUTF();
                     System.out.println("Received: " + inFromClientString);
-                    inFromClientString = decrypt(inFromClientString, CK_A);
+                    inFromClientString = decrypt(inFromClientString, cc.getCKA(client));
                     System.out.println("Decrypted Received: " + inFromClientString);
+                    
+                    if(inFromClientString.toUpperCase().equals("LOG OFF")) {
+                        break;
+                    }
+                    if(inFromClientString.split("[()]")[0].equals("CHAT_REQUEST")) {
+                        String user = inFromClientString.split("[()]")[1];
+                        String userCKA = cc.getCKA(user);
+                        
+                        if(userCKA == null) {
+                            System.out.println("User " + user + " is not currently online, please try again later");
+                            outToClientString = "UNREACHABLE(" + user + ")";
+                            outToClientString = encrypt(outToClientString, cc.getCKA(client));
+                            outToClient.writeUTF(outToClientString);
+                        } else {
+                            System.out.println("Create chat with " + user + " with secret cka of *" + cc.getCKA(user));
+                            outToClientString = " CHAT_STARTED(" + "1" + ", " + user + ")";
+                            outToClientString = encrypt(outToClientString, cc.getCKA(client));
+                            outToClient.writeUTF(outToClientString);
+                            
+                            while(true) {
+                                inFromClientString = inFromClient.readUTF();
+                                System.out.println("Received: " + inFromClientString);
+                                inFromClientString = decrypt(inFromClientString, cc.getCKA(client));
+                                System.out.println("Decrypted Received: " + inFromClientString);
+                                
+                                if(inFromClientString.contains("END_REQUEST")) {
+                                    break;
+                                } else {
+                                    //Send to clientB
+                                }
+                            }
+                        }
+                        
+                    }
                 }
                 
                 connectionSocket.close();
