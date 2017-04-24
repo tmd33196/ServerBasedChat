@@ -281,6 +281,9 @@ public class Client {
     public void stop() {
         cst.stopIt();
     }
+    public String getClientName(){
+    	return this.clientName;
+    }
     
     public static void main(String args[]){
         Client client = null;//new Client("A","1234","localhost",9879);

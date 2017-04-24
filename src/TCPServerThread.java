@@ -30,6 +30,7 @@ public class TCPServerThread implements Runnable{
         System.out.println("Listening on: " + port);
         String inFromClientString;
         String outToClientString;
+        String HistoryString;
         
         Socket connectionSocket = null;
 
@@ -120,11 +121,28 @@ public class TCPServerThread implements Runnable{
                             outToClientB.writeUTF(outToClientBString);
                             state = "IDLE";
                             //outToClientB.flush();
-                            break;
-                        } else {
+                            break;}
+                         else if(inFromClientString.contains("END_REQUEST")) {
+                                outToClientBString = "END_NOTIF(" + session + ")";
+                                outToClientBString = encrypt(outToClientBString, clientBCKA);
+                                outToClientB.writeUTF(outToClientBString);
+                                state = "IDLE";
+                                //outToClientB.flush();
+                        
+                    } 
+                         else {
                             //outToClientBString = inFromClientString;
-                            outToClientBString = encrypt(inFromClientString, clientBCKA);
+                        	 if(inFromClientString.contains("HISTORY_REQUEST")) {
+                                 History view = new History(client);                          
+                                 HistoryString = view.printToconsole();
+                                 outToClientB.writeUTF(HistoryString);
+                                 break;}
+                                 //outToClientB.flush();
+                        	 
+                        	 outToClientBString = encrypt(inFromClientString, clientBCKA);
                             outToClientB.writeUTF(outToClientBString);
+                            History history = new History(clientB);
+                            history.addMessage(inFromClientString, client);
                             //outToClientB.flush();
                         }
                         break;

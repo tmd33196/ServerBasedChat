@@ -53,10 +53,19 @@ public class ClientKeyboardThread extends Thread {
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();
                             break;
-                        }else {
-                            outToServerString = encrypt2("CHAT(" + client.getSessionID() + ", " + line + ")", CK_A);
+                        }
+                        else {
+                        	if(line.toUpperCase().equals("HISTORY")) {                          
+                                outToServerString = encrypt2("HISTORY_REQUEST(" + client.getSessionID() + ")", CK_A);
+                                outToServer.writeUTF(outToServerString);
+                                outToServer.flush();
+                                break;
+                            }
+                        	outToServerString = encrypt2("CHAT(" + client.getSessionID() + ", " + line + ")", CK_A);
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();
+                            History history = new History(client.getClientName());
+                            history.addMessage(line, client.getClientName());
                         }
                         break;
                 }
