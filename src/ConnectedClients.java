@@ -8,7 +8,7 @@ import java.util.HashMap;
 public class ConnectedClients {
     private HashMap<String, String> secretKeys;
     private HashMap<String, String> xRES;
-    private HashMap<String, String> CK_A;
+    private HashMap<String, byte[]> CK_A;
     
     public ConnectedClients() {
         secretKeys = new HashMap<>();
@@ -24,19 +24,19 @@ public class ConnectedClients {
         return secretKeys.get(key);
     }
     
-    public void addXRES(String key, String value) {
-        xRES.put(key, value);
+    public void addXRES(String key, String string) {
+        xRES.put(key, string);
     }
     
     public String getXRES(String key) {
         return xRES.get(key);
     }
     
-    public void addCKA(String key, String value) {
-        CK_A.put(key, value);
+    public void addCKA(String key, byte[] bs) {
+        CK_A.put(key, bs);
     }
     
-    public String getCKA(String key) {
+    public byte[] getCKA(String key) {
         return CK_A.get(key);
     }
 
