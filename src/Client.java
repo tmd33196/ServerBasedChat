@@ -1,7 +1,14 @@
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 /*
  * Client class for the server based chat project
@@ -13,7 +20,7 @@ public class Client {
     private final String clientSecretKey;
     private final String serverName;
     private final int serverPort;
-    private String CK_A;
+    private byte[] CK_A;
     
     BufferedReader inFromUser;
     
@@ -56,7 +63,7 @@ public class Client {
                 String sendString = "HELLO (" + clientName + ")";
                 sendString(sendString);
             
-                String response = receiveString();
+                String response = receiveString().trim();
                 System.out.println("FROM SERVER:" + response);
                 
                 String[] dataArray = response.split("[()]+");
@@ -68,7 +75,8 @@ public class Client {
                 if(dataArray[0].equals("CHALLENGE")) {
                     String xRES = A3(dataArray[1], clientSecretKey);
                     CK_A = A8(dataArray[1], clientSecretKey);
-                    sendString = "RESPONSE(" + clientName + ", " + xRES + ")";
+                    System.out.println(dataArray[1] + clientSecretKey);
+                    sendString = "RESPONSE(" + clientName + "," + xRES + ")";
                 }
                 else {
                     System.out.println("Error in server response\n" + response);
@@ -77,7 +85,7 @@ public class Client {
                 
                 sendString(sendString);
                 response = receiveString();
-                System.out.println("FROM SERVER:" + response);
+                System.out.println("FROM SERVER:" + response + " " + response.length());
                 response = decrypt(response, CK_A);
                 System.out.println("Decrypted FROM SERVER:" + response);
                 
@@ -105,7 +113,7 @@ public class Client {
             
             clientSocket.close();
             
-        }catch(IOException | NumberFormatException e) {
+        }catch(Exception e) {
             System.out.println(e);
         }
         return true;
@@ -119,33 +127,100 @@ public class Client {
     }
     
     //Receives a string from the UDP server
+    //Where the encryption string gets modified, making it error prone
     private String receiveString() throws IOException {
         byte[] receiveData = new byte[1024];
         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
         clientSocket.receive(receivePacket);
-            
         return new String(receivePacket.getData());
     }
     
-    //Performs A3 encryption
+  //Performs A3 encryption
     private String A3(String random, String secretKey) {
-        //A3: RES = hash1(rand + K_A)
-        return random + secretKey;
+    	String plainText = random + secretKey;
+		MessageDigest m = null;
+		try {
+			m = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		m.reset();
+		m.update(plainText.getBytes());
+		byte[] digest = m.digest();
+		BigInteger bigInt = new BigInteger(1,digest);
+		String strData = bigInt.toString(16);
+		//Padding
+		while(strData.length() < 32 ){
+		  strData = "0"+strData;
+		}
+        return strData;
     }
     
     //Generate the ciphering key
-    private String A8(String random, String secretKey) {
-        //A8: CK_A = hash2(rand + K_A)
-        return random + secretKey;
-    }
+    //Generated Key needs to be 16 byte length
+    private byte[] A8(String ran, String strKey){
+    	String CK_A = ran + strKey;
+		MessageDigest m = null;
+		try {
+			m = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		m.reset();
+		m.update(CK_A.getBytes());
+		byte[] digest = m.digest();
+		return digest;
+	}
+  //Used for UDP currently
+    private String encrypt(String strClearText,byte[] digest) throws Exception{
+		String strData="";
+		byte [] encrypted = null;
+		
+		return strClearText;
+	}
+    //Used for TCP connections, does not currently work for UDP
+    private String encrypt2(String strClearText,byte[] digest) throws Exception{
+		String strData="";
+		byte [] encrypted = null;
+		
+		try {
+			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+			Cipher cipher=Cipher.getInstance("AES");
+			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
+			encrypted=cipher.doFinal(strClearText.getBytes());
+			strData=new String(encrypted, "ISO-8859-1");
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e);
+		}
+		return strData;
+	}
+    //Used for UDP currently
+    private String decrypt(String strEncrypted, byte[] digest) throws Exception{
+		String strData="";
+		
+		return strEncrypted;
+	}
+  //Used for TCP connections, does not currently work for UDP
+    private String decrypt2(String strEncrypted, byte[] digest) throws Exception{
+		String strData="";
+		byte[] byteEncrypted = strEncrypted.getBytes("ISO-8859-1");
+		try {
+			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+			Cipher cipher=Cipher.getInstance("AES");
+			cipher.init(Cipher.DECRYPT_MODE, skeyspec);
+			byte[] decrypted=cipher.doFinal(byteEncrypted);
+			strData = new String(decrypted);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e);
+		}
+		return strData;
+	}
+   
     
-    private String encrypt(String message, String CKA) {
-        return message;
-    }
-    
-    private String decrypt(String message, String CKA) {
-        return message;
-    }
     
     private void runTCPClient(String cookie, int port) {
         String outToServerString;
@@ -158,31 +233,31 @@ public class Client {
             DataInputStream inFromServer = new DataInputStream(new BufferedInputStream(TCPClientSocket.getInputStream()));
             
             outToServerString = "CONNECT(" + cookie + ")";
-            outToServerString = encrypt(outToServerString, CK_A);
+            outToServerString = encrypt2(outToServerString, CK_A);
             outToServer.writeUTF(outToServerString);
             outToServer.flush();
             
             inFromServerString = inFromServer.readUTF();
             System.out.println("FROM SERVER: " + inFromServerString);
-            inFromServerString = decrypt(inFromServerString, CK_A);
+            inFromServerString = decrypt2(inFromServerString, CK_A);
             System.out.println("Decrypted FROM SERVER: " + inFromServerString);
             
             String line = inFromUser.readLine();
             while(true) {
                 if(line.toUpperCase().equals("LOG OFF")) {
-                    outToServerString = encrypt(line, CK_A);
+                    outToServerString = encrypt2(line, CK_A);
                     outToServer.writeUTF(outToServerString);
                     outToServer.flush();
                     break;
                 }else if(line.contains("Chat")) {
                     outToServerString = "CHAT_REQUEST(" + line.split("[ ]")[1] + ")";
-                    outToServerString = encrypt(outToServerString, CK_A);
+                    outToServerString = encrypt2(outToServerString, CK_A);
                     outToServer.writeUTF(outToServerString);
                     outToServer.flush();
                     
                     inFromServerString = inFromServer.readUTF();
                     System.out.println("FROM SERVER: " + inFromServerString);
-                    inFromServerString = decrypt(inFromServerString, CK_A);
+                    inFromServerString = decrypt2(inFromServerString, CK_A);
                     System.out.println("Decrypted FROM SERVER: " + inFromServerString);
                     
                     if(inFromServerString.contains("UNREACHABLE")) {
@@ -219,7 +294,7 @@ public class Client {
     }
     
     public static void main(String args[]){
-        Client client = null;
+        Client client = new Client("A","1234","localhost",9879);
         
         if(args.length != 4)
             System.out.println("Use correct input, client name, client key, host name, port number");
