@@ -135,7 +135,8 @@ public class TCPServerThread implements Runnable{
                         	 if(inFromClientString.contains("HISTORY_REQUEST")) {
                                  History view = new History(client);                          
                                  HistoryString = view.printToconsole();
-                                 outToClientB.writeUTF(HistoryString);
+                                 HistoryString = encrypt(HistoryString, cc.getCKA(client));
+                                 outToClient.writeUTF(HistoryString);
                                  break;}
                                  //outToClientB.flush();
                         	 

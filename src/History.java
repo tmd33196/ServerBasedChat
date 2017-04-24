@@ -4,6 +4,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class History {
     
@@ -25,18 +27,16 @@ public class History {
 			File f = new File(filePath);
 			if ( f.exists() && !f.isDirectory() ) {
 				out = new PrintWriter(new FileOutputStream(new File(filePath), true));
-				out.append(System.getProperty("file.separator"));
-				out.append("\r\n");
+			
 				out.append(sender + ":" + msg +System.getProperty("file.separator"));
-				out.println(System.getProperty("file.separator"));
+
 				out.close();
 			}
 			else {
 				out = new PrintWriter(filePath);
-				out.println(System.getProperty("file.separator"));
-				out.append("\r\n");
+
 				out.append("From:" + sender + ":" + msg +System.getProperty("file.separator"));
-				out.append(System.getProperty("file.separator"));
+
 				out.close();
 			}
 		 }catch (IOException e) {
@@ -47,17 +47,11 @@ public class History {
 	
 public String printToconsole(){
 	String s=null;
+	String line = null;
 	try {
-	BufferedReader in = new BufferedReader(new FileReader(filePath));
-	String line = in.readLine();
-	
-	while(line != null)
-	{
-		 s = new StringBuilder()
-		           .append(line).toString();    		    
-	  line = in.readLine();
+		s = new String(Files.readAllBytes(Paths.get(filePath)));
 	}
-	in.close();}
+
 	catch (IOException e) {
 
 		e.printStackTrace();}
