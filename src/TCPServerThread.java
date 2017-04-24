@@ -5,6 +5,9 @@
 import java.io.*;
 import java.net.*;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+
 public class TCPServerThread implements Runnable{
     ServerSocket welcomeSocket;
     private final int port;
@@ -57,7 +60,7 @@ public class TCPServerThread implements Runnable{
                     }
                     if(inFromClientString.split("[()]")[0].equals("CHAT_REQUEST")) {
                         String user = inFromClientString.split("[()]")[1];
-                        String userCKA = cc.getCKA(user);
+                        byte[] userCKA = cc.getCKA(user);
                         
                         if(userCKA == null) {
                             System.out.println("User " + user + " is not currently online, please try again later");
@@ -93,12 +96,40 @@ public class TCPServerThread implements Runnable{
             }
         }
     }
-    
-    private String encrypt(String message, String CKA) {
-        return message;
-    }
-    
-    private String decrypt(String message, String CKA) {
-        return message;
-    }
+    //Encrypts string using AES
+    private String encrypt(String strClearText,byte[] digest) throws Exception{
+		String strData="";
+		byte [] encrypted = null;
+		
+		try {
+			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+			Cipher cipher=Cipher.getInstance("AES");
+			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
+			encrypted=cipher.doFinal(strClearText.getBytes());
+			strData=new String(encrypted, "ISO-8859-1");
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e);
+		}
+		return strData;
+	}
+    //decrypts string using AES
+    private String decrypt(String strEncrypted, byte[] digest) throws Exception{
+		String strData="";
+		byte[] byteEncrypted = strEncrypted.getBytes("ISO-8859-1");
+		try {
+			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+			Cipher cipher=Cipher.getInstance("AES");
+			cipher.init(Cipher.DECRYPT_MODE, skeyspec);
+			byte[] decrypted=cipher.doFinal(byteEncrypted);
+			strData=new String(decrypted);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e);
+		}
+		return strData;
+	}
+
 }
