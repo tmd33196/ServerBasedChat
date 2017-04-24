@@ -1,4 +1,5 @@
 server:
+	javac History.java
 	javac Server.java
 	java Server 9879
 

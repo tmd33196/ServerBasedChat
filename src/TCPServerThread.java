@@ -13,11 +13,13 @@ public class TCPServerThread implements Runnable{
     private final int port;
     private ConnectedClients cc;
     private final String client;
+    private History history;
     
-    public TCPServerThread(int port, String client, ConnectedClients cc) {
+    public TCPServerThread(int port, String client, ConnectedClients cc, History history) {
         this.port = port;
         this.cc = cc;
         this.client = client;
+        this.history = history;
         try {
             welcomeSocket = new ServerSocket(port);
             System.out.println("Created TCP on: " + port);
@@ -86,6 +88,25 @@ public class TCPServerThread implements Runnable{
                             
                             state = "CHAT";
                         }
+                        if(inFromClientString.contains("HISTORY")) {
+                                 /*History view = new History(client);                          
+                                 BufferedReader r = new BufferedReader( new FileReader( client ) );
+                                 String s = "", line = null;
+                                 while ((line = r.readLine()) != null) {
+                                     s += line;
+                                 }
+                                 System.out.print(s);
+                                 */
+                                 String historyString = history.printToconsole();
+                                 System.out.println(historyString);
+                                 //HistoryString = view.printToconsole();
+                                 HistoryString = encrypt(historyString, cc.getCKA(client));
+                                 outToClient.writeUTF(HistoryString);
+                                 //r.close();
+                                 break;
+                                 //outToClientB.flush();
+                                 
+                        }
                         if(inFromClientString.split("[()]")[0].equals("CHAT_REQUEST")) {
                             clientB = inFromClientString.split("[()]")[1];
                             clientBCKA = cc.getCKA(clientB);
@@ -121,37 +142,15 @@ public class TCPServerThread implements Runnable{
                             outToClientB.writeUTF(outToClientBString);
                             state = "IDLE";
                             //outToClientB.flush();
-                            break;}
-                         else if(inFromClientString.contains("END_REQUEST")) {
-                                outToClientBString = "END_NOTIF(" + session + ")";
-                                outToClientBString = encrypt(outToClientBString, clientBCKA);
-                                outToClientB.writeUTF(outToClientBString);
-                                state = "IDLE";
-                                //outToClientB.flush();
-                        
-                    } 
+                            break;
+                        } 
                          else {
                             //outToClientBString = inFromClientString;
-                        	 if(inFromClientString.contains("HISTORY_REQUEST")) {
-                                 History view = new History(client);                          
-                                 BufferedReader r = new BufferedReader( new FileReader( client ) );
-                                 String s = "", line = null;
-                                 while ((line = r.readLine()) != null) {
-                                     s += line;
-                                 }
-                                 System.out.print(s);
-                                 
-                                 //HistoryString = view.printToconsole();
-                                 HistoryString = encrypt(s, cc.getCKA(client));
-                                 outToClient.writeUTF(HistoryString);
-                                 r.close();
-                                 break;}
-                                 //outToClientB.flush();
-                        	 
-                        	 outToClientBString = encrypt(inFromClientString, clientBCKA);
+                    
+                            outToClientBString = encrypt(inFromClientString, clientBCKA);
                             outToClientB.writeUTF(outToClientBString);
-                            History history = new History(clientB);
-                            history.addMessage(inFromClientString, client);
+                            //History history = new History(clientB);
+                            history.addMessage(inFromClientString.substring(inFromClientString.indexOf(",") + 2, inFromClientString.length() - 1), client, clientB, session);
                             //outToClientB.flush();
                         }
                         break;

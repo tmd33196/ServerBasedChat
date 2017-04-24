@@ -14,9 +14,10 @@ public class Server {
     private DatagramSocket serverSocket;
     byte[] receiveData = new byte[1024];
     byte[] sendData = new byte[1024];
+    History history = null;
     
     public Server(int port) { 
-        
+        history = new History();
         ConnectedClients cc = new ConnectedClients();
         cc.addSecretKey("A", "1234");
         cc.addSecretKey("B", "1234");
@@ -71,7 +72,7 @@ public class Server {
                         
                         if(cc.getXRES(dataArray[1]).equals(dataArray[2])) {
                             cc.addPort(dataArray[1], nextPort);
-                            TCPServerThread tcp = new TCPServerThread(nextPort, dataArray[1], cc);
+                            TCPServerThread tcp = new TCPServerThread(nextPort, dataArray[1], cc, history);
                             Thread thread = new Thread(tcp);
                             thread.start();
                             

@@ -42,8 +42,13 @@ public class ClientKeyboardThread extends Thread {
                             outToServerString = encrypt2(outToServerString, CK_A);
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();
+                        }else if(line.toUpperCase().contains("HISTORY")) {                          
+                                outToServerString = encrypt2("HISTORY_REQUEST(" + line.split("[ ]")[1] + ")", CK_A);
+                                outToServer.writeUTF(outToServerString);
+                                outToServer.flush();
+                                break;
                         }else {
-                            System.out.println("Please type Log Off or Chat [Client-ID]");
+                            System.out.println("Please type Log Off or Chat [Client-ID] or History [Client-ID]");
                         }
                         break;
                     case ("CHAT"):
@@ -55,17 +60,11 @@ public class ClientKeyboardThread extends Thread {
                             break;
                         }
                         else {
-                        	if(line.toUpperCase().equals("HISTORY")) {                          
-                                outToServerString = encrypt2("HISTORY_REQUEST(" + client.getSessionID() + ")", CK_A);
-                                outToServer.writeUTF(outToServerString);
-                                outToServer.flush();
-                                break;
-                            }
-                        	outToServerString = encrypt2("CHAT(" + client.getSessionID() + ", " + line + ")", CK_A);
+                            outToServerString = encrypt2("CHAT(" + client.getSessionID() + ", " + line + ")", CK_A);
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();
-                            History history = new History(client.getClientName());
-                            history.addMessage(line, client.getClientName());
+                            //History history = new History(client.getClientName());
+                            //history.addMessage(line, client.getClientName());
                         }
                         break;
                 }
