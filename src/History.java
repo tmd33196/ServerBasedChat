@@ -50,8 +50,7 @@ public class History {
 
 		}}*/
                 String save = session + " From: " + sender + " To: " + receiver + " " + msg;
-                System.out.println("HISTORY IN: " + msg + " " + sender);
-                System.out.println(history);
+
             if(history.get(session) != null) {
                 System.out.println("TRUE");
                 history.get(session).add(save);

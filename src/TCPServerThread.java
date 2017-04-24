@@ -42,7 +42,6 @@ public class TCPServerThread implements Runnable{
             DataInputStream inFromClient = new DataInputStream(new BufferedInputStream(connectionSocket.getInputStream()));
             DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
             cc.addStream(client, outToClient);
-            System.out.println(outToClient.toString());
             
             int session = -1;
             int clientBport = -1;
@@ -140,13 +139,15 @@ public class TCPServerThread implements Runnable{
                             outToClientBString = "END_NOTIF(" + session + ")";
                             outToClientBString = encrypt(outToClientBString, clientBCKA);
                             outToClientB.writeUTF(outToClientBString);
+                            System.out.println("send end req to client b");
                             state = "IDLE";
                             //outToClientB.flush();
                             break;
                         } else if(inFromClientString.contains("END_REC")) {
+                            System.out.println("Received end rec");
                             state = "IDLE";
                         }
-                         else {
+                        else if(inFromClientString.contains("CHAT(")){
                             //outToClientBString = inFromClientString;
                     
                             outToClientBString = encrypt(inFromClientString, clientBCKA);

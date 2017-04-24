@@ -48,6 +48,7 @@ public class ClientServerThread extends Thread {
                     case ("CHAT"):
                         if(inFromServerString.contains("END_NOTIF")) {
                             System.out.println("Chat Ended");
+                            client.endChat(inFromServerString);
                             client.setState("IDLE");
                         }else {
                             String s = inFromServerString.substring(inFromServerString.indexOf(",") + 2, inFromServerString.length() - 1);
