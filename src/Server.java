@@ -89,9 +89,12 @@ public class Server {
                         
                         //if(xRES.get(dataArray[1]).equals(dataArray[2])) {
                         if(cc.getXRES(dataArray[1]).equals(dataArray[2])) {
+                            cc.addPort(dataArray[1], nextPort);
                             TCPServerThread tcp = new TCPServerThread(nextPort, dataArray[1], cc);//CK_A.get(dataArray[1]));
                             Thread thread = new Thread(tcp);
                             thread.start();
+                            
+                            
 
                             output = "AUTH_SUCCESS(" + random.nextInt(1000) + ", " + nextPort++ + ")";
                             output = encrypt(output, cc.getCKA(dataArray[1]));//CK_A.get(dataArray[1]));

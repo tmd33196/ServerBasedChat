@@ -27,6 +27,9 @@ public class Client {
     private DatagramSocket clientSocket;
     private InetAddress IPAddress;
     
+    private String state;
+    private String sessionID;
+    
     //Sets the class variables and starts the log on process
     public Client(String _clientName, String _clientSecretKey, String _serverName, int _serverPort){
         this.clientName = _clientName;
@@ -96,7 +99,6 @@ public class Client {
                 
                 //Switches to TCP
                 if(dataArray[0].equals("AUTH_SUCCESS")) {
-                    System.out.println(Arrays.toString(dataArray));
                     runTCPClient(dataArray[1], Integer.parseInt(dataArray[2]));
                 }
                 else {
@@ -137,91 +139,89 @@ public class Client {
     
   //Performs A3 encryption
     private String A3(String random, String secretKey) {
-    	String plainText = random + secretKey;
-		MessageDigest m = null;
-		try {
-			m = MessageDigest.getInstance("SHA-1");
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-		m.reset();
-		m.update(plainText.getBytes());
-		byte[] digest = m.digest();
-		BigInteger bigInt = new BigInteger(1,digest);
-		String strData = bigInt.toString(16);
-		//Padding
-		while(strData.length() < 32 ){
-		  strData = "0"+strData;
-		}
+        String plainText = random + secretKey;
+        MessageDigest m = null;
+        try {
+            m = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        m.reset();
+        m.update(plainText.getBytes());
+        byte[] digest = m.digest();
+        BigInteger bigInt = new BigInteger(1,digest);
+        String strData = bigInt.toString(16);
+        //Padding
+        while(strData.length() < 32 ){
+            strData = "0"+strData;
+        }
         return strData;
     }
     
     //Generate the ciphering key
     //Generated Key needs to be 16 byte length
     private byte[] A8(String ran, String strKey){
-    	String CK_A = ran + strKey;
-		MessageDigest m = null;
-		try {
-			m = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-		m.reset();
-		m.update(CK_A.getBytes());
-		byte[] digest = m.digest();
-		return digest;
-	}
+        String CK_A = ran + strKey;
+        MessageDigest m = null;
+        try {
+            m = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        m.reset();
+        m.update(CK_A.getBytes());
+        byte[] digest = m.digest();
+        return digest;
+    }
   //Used for UDP currently
     private String encrypt(String strClearText,byte[] digest) throws Exception{
-		String strData="";
-		byte [] encrypted = null;
-		
-		return strClearText;
-	}
+        String strData="";
+        byte [] encrypted = null;
+
+        return strClearText;
+    }
     //Used for TCP connections, does not currently work for UDP
     private String encrypt2(String strClearText,byte[] digest) throws Exception{
-		String strData="";
-		byte [] encrypted = null;
-		
-		try {
-			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
-			Cipher cipher=Cipher.getInstance("AES");
-			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
-			encrypted=cipher.doFinal(strClearText.getBytes());
-			strData=new String(encrypted, "ISO-8859-1");
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new Exception(e);
-		}
-		return strData;
-	}
+        String strData="";
+        byte [] encrypted = null;
+
+        try {
+            SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+            Cipher cipher=Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
+            encrypted=cipher.doFinal(strClearText.getBytes());
+            strData=new String(encrypted, "ISO-8859-1");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e);
+        }
+        return strData;
+    }
     //Used for UDP currently
     private String decrypt(String strEncrypted, byte[] digest) throws Exception{
-		String strData="";
-		
-		return strEncrypted;
-	}
+        String strData="";
+
+        return strEncrypted;
+    }
   //Used for TCP connections, does not currently work for UDP
     private String decrypt2(String strEncrypted, byte[] digest) throws Exception{
-		String strData="";
-		byte[] byteEncrypted = strEncrypted.getBytes("ISO-8859-1");
-		try {
-			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
-			Cipher cipher=Cipher.getInstance("AES");
-			cipher.init(Cipher.DECRYPT_MODE, skeyspec);
-			byte[] decrypted=cipher.doFinal(byteEncrypted);
-			strData = new String(decrypted);
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new Exception(e);
-		}
-		return strData;
-	}
+        String strData="";
+        byte[] byteEncrypted = strEncrypted.getBytes("ISO-8859-1");
+        try {
+            SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+            Cipher cipher=Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, skeyspec);
+            byte[] decrypted=cipher.doFinal(byteEncrypted);
+            strData = new String(decrypted);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e);
+        }
+        return strData;
+    }
    
-    
-    
     private void runTCPClient(String cookie, int port) {
         String outToServerString;
         String inFromServerString;
@@ -241,8 +241,16 @@ public class Client {
             System.out.println("FROM SERVER: " + inFromServerString);
             inFromServerString = decrypt2(inFromServerString, CK_A);
             System.out.println("Decrypted FROM SERVER: " + inFromServerString);
+            setState("IDLE");
+            ClientServerThread cst = new ClientServerThread(this, inFromServer, CK_A);
+            Thread thread = new Thread(cst);
+            thread.start();
             
-            String line = inFromUser.readLine();
+            ClientKeyboardThread ckt = new ClientKeyboardThread(this, outToServer, CK_A);
+            Thread thread2 = new Thread(ckt);
+            thread2.start();
+            
+            /*String line = inFromUser.readLine();
             while(true) {
                 if(line.toUpperCase().equals("LOG OFF")) {
                     outToServerString = encrypt2(line, CK_A);
@@ -260,22 +268,24 @@ public class Client {
                     inFromServerString = decrypt2(inFromServerString, CK_A);
                     System.out.println("Decrypted FROM SERVER: " + inFromServerString);
                     
+                    //inFromServerString = ct.getData();
+                    
                     if(inFromServerString.contains("UNREACHABLE")) {
                         System.out.println("Client " + line.split("[( )]")[1] + " is currently ureachable");
                     }else {
                         System.out.println("Chat started");
-                        String sessionID = line.split("[( ),]+")[1];
+                        String sessionID = inFromServerString.split("[(), ]+")[2];
                         
                         while(true) {
                             line = inFromUser.readLine();
                             
-                            if(line.equals("End Chat")) {
-                                outToServerString = encrypt("END_REQUEST(" + sessionID + ")", CK_A);
+                            if(line.toUpperCase().equals("END CHAT")) {
+                                outToServerString = encrypt2("END_REQUEST(" + sessionID + ")", CK_A);
                                 outToServer.writeUTF(outToServerString);
                                 outToServer.flush();
                                 break;
                             }else {
-                                outToServerString = encrypt(line, CK_A);
+                                outToServerString = encrypt2("CHAT(" + sessionID + ", " + line + ")", CK_A);
                                 outToServer.writeUTF(outToServerString);
                                 outToServer.flush();
                             }
@@ -287,14 +297,30 @@ public class Client {
                 }
                 line = inFromUser.readLine();
             }
-            TCPClientSocket.close();   
+            TCPClientSocket.close();  */ 
         }catch(Exception e) {
             System.out.println(e);
         }
     }
     
+    public void setState(String state) {
+        this.state = state;
+    }
+    
+    public String getState() {
+        return state;
+    }
+    
+    public void setSessionID(String session) {
+        this.sessionID = session;
+    }
+    
+    public String getSessionID() {
+        return sessionID;
+    }
+    
     public static void main(String args[]){
-        Client client = new Client("A","1234","localhost",9879);
+        Client client = null;//new Client("A","1234","localhost",9879);
         
         if(args.length != 4)
             System.out.println("Use correct input, client name, client key, host name, port number");

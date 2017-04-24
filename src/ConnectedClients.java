@@ -1,4 +1,5 @@
 
+import java.io.DataOutputStream;
 import java.util.HashMap;
 
 /*
@@ -9,11 +10,16 @@ public class ConnectedClients {
     private HashMap<String, String> secretKeys;
     private HashMap<String, String> xRES;
     private HashMap<String, byte[]> CK_A;
+    private HashMap<String, Integer> ports;
+    private HashMap<String, DataOutputStream> streams;
+    private int session;
     
     public ConnectedClients() {
         secretKeys = new HashMap<>();
         xRES = new HashMap<>();
         CK_A = new HashMap<>();
+        ports = new HashMap<>();
+        streams = new HashMap<>();
     }
     
     public void addSecretKey(String key, String value) {
@@ -39,5 +45,30 @@ public class ConnectedClients {
     public byte[] getCKA(String key) {
         return CK_A.get(key);
     }
+    
+    public void addPort(String key, Integer port) {
+        ports.put(key, port);
+    }
+    
+    public int getPort(String key) {
+        return ports.get(key);
+    }
+    
+    public void addStream(String key, DataOutputStream dos) {
+        streams.put(key, dos);
+    }
+    
+    public DataOutputStream getStream(String key) {
+        return streams.get(key);
+    }
+    
+    public int getSession() {
+        return session++;
+    }
 
+    public void removeClient(String key) {
+        xRES.remove(key);
+        CK_A.remove(key);
+    }
+    
 }
