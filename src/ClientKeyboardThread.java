@@ -87,6 +87,18 @@ public class ClientKeyboardThread extends Thread {
         }
     }
     
+    public void endChat(String message) {
+        try {
+            client.setState("IDLE");
+            String outToServerString = message.replace("END_REQUEST", "END_REC");
+            outToServerString = encrypt2(outToServerString, CK_A);
+            outToServer.writeUTF(outToServerString);
+            outToServer.flush();
+        }catch(Exception e) {
+            System.out.println(e);
+        }
+    }
+    
         //Used for TCP connections, does not currently work for UDP
     private String encrypt2(String strClearText,byte[] digest) throws Exception{
         String strData="";

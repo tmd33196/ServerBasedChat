@@ -39,8 +39,6 @@ public class Client {
         this.serverName = _serverName;
         this.serverPort = _serverPort;
         
-        System.out.println("Connecting...");
-        
         //Continues to try to log on until it is successful
         while(!connect()) {
             System.out.println("Try to log on again");
@@ -61,12 +59,13 @@ public class Client {
             
             String sentence = inFromUser.readLine();
             if(sentence.toUpperCase().equals("LOG ON")) {
+                System.out.println("Connecting...");
                 //HELLO to the server
                 String sendString = "HELLO (" + clientName + ")";
                 sendString(sendString);
             
                 String response = receiveString().trim();
-                System.out.println("FROM SERVER:" + response);
+                //System.out.println("FROM SERVER:" + response);
                 
                 String[] dataArray = response.split("[()]+");
                 for(int a = 0; a < dataArray.length; a ++) {
@@ -77,7 +76,7 @@ public class Client {
                 if(dataArray[0].equals("CHALLENGE")) {
                     String xRES = A3(dataArray[1], clientSecretKey);
                     CK_A = A8(dataArray[1], clientSecretKey);
-                    System.out.println(dataArray[1] + clientSecretKey);
+                    //System.out.println(dataArray[1] + clientSecretKey);
                     sendString = "RESPONSE(" + clientName + "," + xRES + ")";
                 }
                 else {
@@ -87,9 +86,9 @@ public class Client {
                 
                 sendString(sendString);
                 byte [] responseBytes = receiveRandCookie();
-                System.out.println("FROM SERVER:" + responseBytes.toString() + " " + responseBytes.length);
+                //System.out.println("FROM SERVER:" + responseBytes.toString() + " " + responseBytes.length);
                 response = decrypt(responseBytes, CK_A);
-                System.out.println("Decrypted FROM SERVER:" + response);
+                //System.out.println("Decrypted FROM SERVER:" + response);
                 
                 dataArray = response.split("[(), ]+");
                 for(int a = 0; a < dataArray.length; a ++) {
@@ -260,7 +259,7 @@ public class Client {
         String inFromServerString;
         
         try {
-            System.out.println("Connecting to: " + port);
+            //System.out.println("Connecting to: " + port);
             Socket TCPClientSocket = new Socket(serverName, port);
             DataOutputStream outToServer = new DataOutputStream(TCPClientSocket.getOutputStream());
             DataInputStream inFromServer = new DataInputStream(new BufferedInputStream(TCPClientSocket.getInputStream()));
@@ -271,10 +270,13 @@ public class Client {
             outToServer.flush();
             
             inFromServerString = inFromServer.readUTF();
-            System.out.println("FROM SERVER: " + inFromServerString);
+            //System.out.println("FROM SERVER: " + inFromServerString);
             inFromServerString = decrypt2(inFromServerString, CK_A);
-            System.out.println("Decrypted FROM SERVER: " + inFromServerString);
+            //System.out.println("Decrypted FROM SERVER: " + inFromServerString);
             setState("IDLE");
+            
+            System.out.println("Connected");
+            
             cst = new ClientServerThread(this, inFromServer, CK_A);
             Thread thread = new Thread(cst);
             thread.start();
@@ -305,6 +307,10 @@ public class Client {
     
     public void startChat(String message) {
         ckt.startChat(message);
+    }
+    
+    public void endChat(String message) {
+        ckt.endChat(message);
     }
     
     public void stop() {

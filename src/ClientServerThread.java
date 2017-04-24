@@ -15,16 +15,16 @@ public class ClientServerThread extends Thread {
         this.client = client;
         this.inFromServer = inFromServer;
         this.CK_A = CK_A;
-        System.out.println(CK_A);
+        //System.out.println(CK_A);
     }
     
     public void run() {
         while(true) {
             try {
                 String inFromServerString = inFromServer.readUTF();
-                System.out.println("FROM SERVER: " + inFromServerString);
+                //System.out.println("FROM SERVER: " + inFromServerString);
                 inFromServerString = decrypt2(inFromServerString, CK_A);
-                System.out.println("Decrypted FROM SERVER: " + inFromServerString);
+                //System.out.println("Decrypted FROM SERVER: " + inFromServerString);
                 
                 switch(client.getState()) {
                     case ("IDLE"):

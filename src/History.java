@@ -49,7 +49,7 @@ public class History {
 			e.printStackTrace();
 
 		}}*/
-                String save = session + " From: " + sender + " " + msg;
+                String save = session + " From: " + sender + " To: " + receiver + " " + msg;
                 System.out.println("HISTORY IN: " + msg + " " + sender);
                 System.out.println(history);
             if(history.get(session) != null) {
