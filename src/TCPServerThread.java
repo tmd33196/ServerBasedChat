@@ -41,6 +41,13 @@ public class TCPServerThread implements Runnable{
             cc.addStream(client, outToClient);
             System.out.println(outToClient.toString());
             
+            int session = -1;
+            int clientBport = -1;
+            String outToClientBString = "";
+            DataOutputStream outToClientB = null;
+            String clientB = "";
+            byte[] clientBCKA = null;
+            
             inFromClientString = inFromClient.readUTF();
             System.out.println("Received: " + inFromClientString);
             inFromClientString = decrypt(inFromClientString, cc.getCKA(client));
@@ -49,67 +56,83 @@ public class TCPServerThread implements Runnable{
             outToClientString = "CONNECTED";
             outToClientString = encrypt(outToClientString, cc.getCKA(client));
             outToClient.writeUTF(outToClientString);
-
-
+            
+            String state = "IDLE";
+            
             while(true) {
                 inFromClientString = inFromClient.readUTF();
                 System.out.println("Received: " + inFromClientString);
                 inFromClientString = decrypt(inFromClientString, cc.getCKA(client));
                 System.out.println("Decrypted Received: " + inFromClientString);
+                
+                switch(state) {
+                    case ("IDLE"):
+                        if(inFromClientString.toUpperCase().equals("LOG OFF")) {
+                            inFromClient.close();
+                            outToClient.close();
+                            state = "DONE";
+                            break;
+                        }
+                        if(inFromClientString.split("[()]")[0].equals("CHAT_STARTED")) {
+                            clientB = inFromClientString.split("[(), ]+")[2];
+                            clientBCKA = cc.getCKA(clientB);
+                            
+                            session = cc.getSession();
+                            clientBport = cc.getPort(clientB);
+                            outToClientBString = "";
+                            outToClientB = cc.getStream(clientB);
+                            System.out.println(outToClientB.toString());
+                            
+                            state = "CHAT";
+                        }
+                        if(inFromClientString.split("[()]")[0].equals("CHAT_REQUEST")) {
+                            clientB = inFromClientString.split("[()]")[1];
+                            clientBCKA = cc.getCKA(clientB);
 
-                if(inFromClientString.toUpperCase().equals("LOG OFF")) {
-                    break;
-                }
-                if(inFromClientString.split("[()]")[0].equals("CHAT_REQUEST")) {
-                    String clientB = inFromClientString.split("[()]")[1];
-                    byte[] clientBCKA = cc.getCKA(clientB);
+                            if(clientBCKA == null) {
+                                System.out.println("User " + clientB + " is not currently online, please try again later");
+                                outToClientString = "UNREACHABLE(" + clientB + ")";
+                                outToClientString = encrypt(outToClientString, cc.getCKA(client));
+                                outToClient.writeUTF(outToClientString);
+                            } else {
+                                session = cc.getSession();
+                                clientBport = cc.getPort(clientB);
+                                outToClientBString = "";
+                                outToClientB = cc.getStream(clientB);
+                                System.out.println(outToClientB.toString());
 
-                    if(clientBCKA == null) {
-                        System.out.println("User " + clientB + " is not currently online, please try again later");
-                        outToClientString = "UNREACHABLE(" + clientB + ")";
-                        outToClientString = encrypt(outToClientString, cc.getCKA(client));
-                        outToClient.writeUTF(outToClientString);
-                    } else {
-                        int session = cc.getSession();
-                        int clientBport = cc.getPort(clientB);
-                        String outToClientBString = "";
-                        //Socket clientBSocket = new Socket("localhost", clientBport, InetAddress.getByName("localhost"), clientBport);
-                        //System.out.println(clientBSocket);
-                        //DataOutputStream outToClientB = new DataOutputStream(clientBSocket.getOutputStream());
-                        DataOutputStream outToClientB = cc.getStream(clientB);
-                        System.out.println(outToClientB.toString());
-                        
-                        System.out.println("Create chat with " + clientB + " with cka of: " + cc.getCKA(clientB) + " on port: " + clientBport);
-                        outToClientString = "CHAT_STARTED(" + session + ", " + clientB + ")";
-                        outToClientString = encrypt(outToClientString, cc.getCKA(client));
-                        outToClient.writeUTF(outToClientString);
-                        
-                        outToClientBString = "CHAT_STARTED(" + session + ", " + client + ")";
-                        outToClientBString = encrypt(outToClientBString, clientBCKA);
-                        outToClientB.writeUTF(outToClientBString);
-                        
+                                System.out.println("Create chat with " + clientB + " with cka of: " + clientBCKA + " on port: " + clientBport);
+                                outToClientString = "CHAT_STARTED(" + session + ", " + clientB + ")";
+                                outToClientString = encrypt(outToClientString, cc.getCKA(client));
+                                outToClient.writeUTF(outToClientString);
 
-                        while(true) {
-                            inFromClientString = inFromClient.readUTF();
-                            System.out.println("Received: " + inFromClientString);
-                            inFromClientString = decrypt(inFromClientString, cc.getCKA(client));
-                            System.out.println("Decrypted Received: " + inFromClientString);
-
-                            if(inFromClientString.contains("END_REQUEST")) {
-                                outToClientBString = "END_NOTIF(" + session + ")";
+                                outToClientBString = "CHAT_STARTED(" + session + ", " + client + ")";
                                 outToClientBString = encrypt(outToClientBString, clientBCKA);
                                 outToClientB.writeUTF(outToClientBString);
-                                //outToClientB.flush();
-                                break;
-                            } else {
-                                //outToClientBString = inFromClientString;
-                                outToClientBString = encrypt(inFromClientString, clientBCKA);
-                                outToClientB.writeUTF(outToClientBString);
-                                //outToClientB.flush();
+                                state = "CHAT";
                             }
                         }
-                    }
-
+                        break;
+                    case ("CHAT"):
+                        if(inFromClientString.contains("END_REQUEST")) {
+                            outToClientBString = "END_NOTIF(" + session + ")";
+                            outToClientBString = encrypt(outToClientBString, clientBCKA);
+                            outToClientB.writeUTF(outToClientBString);
+                            state = "IDLE";
+                            //outToClientB.flush();
+                            break;
+                        } else {
+                            //outToClientBString = inFromClientString;
+                            outToClientBString = encrypt(inFromClientString, clientBCKA);
+                            outToClientB.writeUTF(outToClientBString);
+                            //outToClientB.flush();
+                        }
+                        break;
+                    
+                }
+                
+                if(state.equals("DONE")) {
+                    break;
                 }
             }
         } catch(Exception e) {
@@ -123,6 +146,7 @@ public class TCPServerThread implements Runnable{
         }
         
     }
+    
     //Encrypts string using AES
     private String encrypt(String strClearText,byte[] digest) throws Exception{
 		String strData="";
@@ -141,6 +165,7 @@ public class TCPServerThread implements Runnable{
 		}
 		return strData;
 	}
+    
     //decrypts string using AES
     private String decrypt(String strEncrypted, byte[] digest) throws Exception{
 		String strData="";

@@ -3,7 +3,6 @@
  */
 
 import java.io.*;
-import java.net.*;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -33,6 +32,7 @@ public class ClientServerThread extends Thread {
                             System.out.println("Chat started with " + inFromServerString.split("[(), ]+")[2]);
                             client.setSessionID(inFromServerString.split("[(), ]+")[1]);
                             client.setState("CHAT");
+                            client.startChat(inFromServerString);
                         }
                         
                         break;
@@ -46,27 +46,28 @@ public class ClientServerThread extends Thread {
                         }
                         break;
                     case ("CHAT"):
-                        if(inFromServerString.contains("END_REQUEST")) {
+                        if(inFromServerString.contains("END_NOTIF")) {
                             System.out.println("Chat Ended");
                             client.setState("IDLE");
                         }else {
-                            System.out.println(inFromServerString.split("[(), ]")[3]);
+                            String s = inFromServerString.substring(inFromServerString.indexOf(",") + 2, inFromServerString.length() - 1);
+                            System.out.println(s);
                         }
                         break;
                 }
             } catch(Exception e) {
                 System.out.println(e);
+                break;
             }
         }
     }
     
-    public String getData() throws Exception {
-        String inFromServerString = inFromServer.readUTF();
-        System.out.println("FROM SERVER: " + inFromServerString);
-        inFromServerString = decrypt2(inFromServerString, CK_A);
-        System.out.println("Decrypted FROM SERVER: " + inFromServerString);
-        
-        return inFromServerString;
+    public void stopIt() {
+        try {
+            inFromServer.close();
+        }catch(Exception e) {
+            System.out.println(e);
+        }
     }
     
     //Used for TCP connections, does not currently work for UDP

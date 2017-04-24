@@ -4,14 +4,13 @@ import java.math.BigInteger;
 import java.net.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 /*
  * Client class for the server based chat project
+ * Handles the connection phase then create a thread for listening to the keyboard and server input
  */
 
 public class Client {
@@ -30,6 +29,9 @@ public class Client {
     private String state;
     private String sessionID;
     
+    ClientServerThread cst = null;
+    ClientKeyboardThread ckt = null;
+    
     //Sets the class variables and starts the log on process
     public Client(String _clientName, String _clientSecretKey, String _serverName, int _serverPort){
         this.clientName = _clientName;
@@ -43,9 +45,6 @@ public class Client {
         while(!connect()) {
             System.out.println("Try to log on again");
         }
-        
-        //Client is done with the chat server
-        System.out.println("Done");
     }
     
     /*Method to connect to the server
@@ -137,7 +136,7 @@ public class Client {
         return new String(receivePacket.getData());
     }
     
-  //Performs A3 encryption
+    //Performs A3 encryption
     private String A3(String random, String secretKey) {
         String plainText = random + secretKey;
         MessageDigest m = null;
@@ -173,13 +172,15 @@ public class Client {
         byte[] digest = m.digest();
         return digest;
     }
-  //Used for UDP currently
+    
+    //Used for UDP currently
     private String encrypt(String strClearText,byte[] digest) throws Exception{
         String strData="";
         byte [] encrypted = null;
 
         return strClearText;
     }
+    
     //Used for TCP connections, does not currently work for UDP
     private String encrypt2(String strClearText,byte[] digest) throws Exception{
         String strData="";
@@ -198,13 +199,15 @@ public class Client {
         }
         return strData;
     }
+    
     //Used for UDP currently
     private String decrypt(String strEncrypted, byte[] digest) throws Exception{
         String strData="";
 
         return strEncrypted;
     }
-  //Used for TCP connections, does not currently work for UDP
+    
+    //Used for TCP connections, does not currently work for UDP
     private String decrypt2(String strEncrypted, byte[] digest) throws Exception{
         String strData="";
         byte[] byteEncrypted = strEncrypted.getBytes("ISO-8859-1");
@@ -221,7 +224,8 @@ public class Client {
         }
         return strData;
     }
-   
+    
+    //Runs the TCP client
     private void runTCPClient(String cookie, int port) {
         String outToServerString;
         String inFromServerString;
@@ -242,62 +246,13 @@ public class Client {
             inFromServerString = decrypt2(inFromServerString, CK_A);
             System.out.println("Decrypted FROM SERVER: " + inFromServerString);
             setState("IDLE");
-            ClientServerThread cst = new ClientServerThread(this, inFromServer, CK_A);
+            cst = new ClientServerThread(this, inFromServer, CK_A);
             Thread thread = new Thread(cst);
             thread.start();
             
-            ClientKeyboardThread ckt = new ClientKeyboardThread(this, outToServer, CK_A);
+            ckt = new ClientKeyboardThread(this, outToServer, CK_A);
             Thread thread2 = new Thread(ckt);
             thread2.start();
-            
-            /*String line = inFromUser.readLine();
-            while(true) {
-                if(line.toUpperCase().equals("LOG OFF")) {
-                    outToServerString = encrypt2(line, CK_A);
-                    outToServer.writeUTF(outToServerString);
-                    outToServer.flush();
-                    break;
-                }else if(line.contains("Chat")) {
-                    outToServerString = "CHAT_REQUEST(" + line.split("[ ]")[1] + ")";
-                    outToServerString = encrypt2(outToServerString, CK_A);
-                    outToServer.writeUTF(outToServerString);
-                    outToServer.flush();
-                    
-                    inFromServerString = inFromServer.readUTF();
-                    System.out.println("FROM SERVER: " + inFromServerString);
-                    inFromServerString = decrypt2(inFromServerString, CK_A);
-                    System.out.println("Decrypted FROM SERVER: " + inFromServerString);
-                    
-                    //inFromServerString = ct.getData();
-                    
-                    if(inFromServerString.contains("UNREACHABLE")) {
-                        System.out.println("Client " + line.split("[( )]")[1] + " is currently ureachable");
-                    }else {
-                        System.out.println("Chat started");
-                        String sessionID = inFromServerString.split("[(), ]+")[2];
-                        
-                        while(true) {
-                            line = inFromUser.readLine();
-                            
-                            if(line.toUpperCase().equals("END CHAT")) {
-                                outToServerString = encrypt2("END_REQUEST(" + sessionID + ")", CK_A);
-                                outToServer.writeUTF(outToServerString);
-                                outToServer.flush();
-                                break;
-                            }else {
-                                outToServerString = encrypt2("CHAT(" + sessionID + ", " + line + ")", CK_A);
-                                outToServer.writeUTF(outToServerString);
-                                outToServer.flush();
-                            }
-                        }
-                    }
-                    
-                }else {
-                    System.out.println("Please type Log Off or Chat [Client-ID]");
-                }
-                line = inFromUser.readLine();
-            }
-            TCPClientSocket.close();  */ 
         }catch(Exception e) {
             System.out.println(e);
         }
@@ -317,6 +272,14 @@ public class Client {
     
     public String getSessionID() {
         return sessionID;
+    }
+    
+    public void startChat(String message) {
+        ckt.startChat(message);
+    }
+    
+    public void stop() {
+        cst.stopIt();
     }
     
     public static void main(String args[]){

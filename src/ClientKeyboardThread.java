@@ -32,7 +32,9 @@ public class ClientKeyboardThread extends Thread {
                             outToServerString = encrypt2(line, CK_A);
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();
-                            //client.close();
+                            outToServer.close();
+                            inFromUser.close();
+                            client.stop();
                             break;
                         }else if(line.contains("Chat")) {
                             client.setState("REQUEST");
@@ -60,7 +62,20 @@ public class ClientKeyboardThread extends Thread {
                 }
             } catch(Exception e){
                 System.out.println(e);
+                break;
             }
+        }
+    }
+    
+    public void startChat(String message) {
+        try {
+            client.setState("CHAT");
+            String outToServerString = message;
+            outToServerString = encrypt2(outToServerString, CK_A);
+            outToServer.writeUTF(outToServerString);
+            outToServer.flush();
+        }catch(Exception e) {
+            System.out.println(e);
         }
     }
     

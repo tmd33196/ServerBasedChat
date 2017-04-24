@@ -2,14 +2,8 @@
 import java.net.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.HashMap;
 import java.util.Random;
-import java.io.*;
 import java.math.BigInteger;
-import java.security.*;
-import javax.crypto.*;
-import javax.crypto.spec.SecretKeySpec;
 
 /*
  * Server class for the server based chat project
@@ -17,20 +11,11 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class Server {
     
-    /*private HashMap<String, String> secretKeys;
-    private HashMap<String, String> xRES;
-    private HashMap<String, String> CK_A;*/
-    
     private DatagramSocket serverSocket;
     byte[] receiveData = new byte[1024];
     byte[] sendData = new byte[1024];
     
     public Server(int port) { 
-        /*secretKeys = new HashMap<>();
-        xRES = new HashMap<>();
-        CK_A = new HashMap<>();
-        secretKeys.put("A", "1234");
-        secretKeys.put("B", "1234");*/
         
         ConnectedClients cc = new ConnectedClients();
         cc.addSecretKey("A", "1234");
@@ -66,12 +51,9 @@ public class Server {
                 switch(dataArray[0]) {
                     case ("HELLO"):
                         //dataArray[1] contains the clientID
-                        //String secretKey = secretKeys.get(dataArray[1]);
                         String secretKey = cc.getSecretKey(dataArray[1]);
                         if(secretKey != null) {
                             String ran = Integer.toString(random.nextInt(1000));
-                            //xRES.put(dataArray[1], A3(ran, secretKey));
-                            //CK_A.put(dataArray[1], A8(ran, secretKey));
                             cc.addXRES(dataArray[1], A3(ran, secretKey));
                             cc.addCKA(dataArray[1], A8(ran, secretKey));
                             System.out.println(ran + secretKey);
@@ -87,24 +69,21 @@ public class Server {
                         //dataArray[1] contains the clientID
                         //dataArray[2] contains the RES
                         
-                        //if(xRES.get(dataArray[1]).equals(dataArray[2])) {
                         if(cc.getXRES(dataArray[1]).equals(dataArray[2])) {
                             cc.addPort(dataArray[1], nextPort);
-                            TCPServerThread tcp = new TCPServerThread(nextPort, dataArray[1], cc);//CK_A.get(dataArray[1]));
+                            TCPServerThread tcp = new TCPServerThread(nextPort, dataArray[1], cc);
                             Thread thread = new Thread(tcp);
                             thread.start();
                             
                             
 
                             output = "AUTH_SUCCESS(" + random.nextInt(1000) + ", " + nextPort++ + ")";
-                            output = encrypt(output, cc.getCKA(dataArray[1]));//CK_A.get(dataArray[1]));
+                            output = encrypt(output, cc.getCKA(dataArray[1]));
                         }
                         else {
                             System.out.println("ERROR: Client response did not match xRES");
                             output = "AUTH_FAIL";
                         }
-                        
-                        //TODO: encrypt string
                         break;
                 }
                 
@@ -124,24 +103,23 @@ public class Server {
     //Performs A3 encryption
     private String A3(String random, String secretKey) {
     	String plainText = random + secretKey;
-		MessageDigest m = null;
-		try {
-			m = MessageDigest.getInstance("SHA-1");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		m.reset();
-		m.update(plainText.getBytes());
-		byte[] digest = m.digest();
-		BigInteger bigInt = new BigInteger(1,digest);
-		String strData = bigInt.toString(16);
-		//Padding
-		while(strData.length() < 32 ){
-		  strData = "0"+strData;
-		}
-		//Added in due to input data from client being automatically made uppercase
-		strData = strData.toUpperCase();
+        MessageDigest m = null;
+        try {
+            m = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        m.reset();
+        m.update(plainText.getBytes());
+        byte[] digest = m.digest();
+        BigInteger bigInt = new BigInteger(1,digest);
+        String strData = bigInt.toString(16);
+        //Padding
+        while(strData.length() < 32 ){
+          strData = "0"+strData;
+        }
+        //Added in due to input data from client being automatically made uppercase
+        strData = strData.toUpperCase();
         return strData;
     }
     
@@ -149,18 +127,17 @@ public class Server {
     //Generated Key needs to be 16 byte length
     private byte[] A8(String ran, String strKey){
     	String CK_A = ran + strKey;
-		MessageDigest m = null;
-		try {
-			m = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		m.reset();
-		m.update(CK_A.getBytes());
-		byte[] digest = m.digest();
-		return digest;
-	}
+        MessageDigest m = null;
+        try {
+            m = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        m.reset();
+        m.update(CK_A.getBytes());
+        byte[] digest = m.digest();
+        return digest;
+    }
     //Whats currently not working
     private String encrypt(String strClearText,byte[] digest) throws Exception{
 		/*
@@ -184,7 +161,7 @@ public class Server {
 	}
     
     public static void main(String args[]){
-        Server server = new Server(9879);
+        Server server = null;//new Server(9879);
         if(args.length != 1)
             System.out.println("Use correct input of a port number");
         else
