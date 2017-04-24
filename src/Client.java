@@ -86,9 +86,9 @@ public class Client {
                 }
                 
                 sendString(sendString);
-                response = receiveString();
-                System.out.println("FROM SERVER:" + response + " " + response.length());
-                response = decrypt(response, CK_A);
+                byte [] responseBytes = receiveRandCookie();
+                System.out.println("FROM SERVER:" + responseBytes.toString() + " " + responseBytes.length);
+                response = decrypt(responseBytes, CK_A);
                 System.out.println("Decrypted FROM SERVER:" + response);
                 
                 dataArray = response.split("[(), ]+");
@@ -136,6 +136,13 @@ public class Client {
         return new String(receivePacket.getData());
     }
     
+    private byte [] receiveRandCookie() throws IOException {
+        byte[] receiveData = new byte[32];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
+        return receivePacket.getData();
+    }
+
     //Performs A3 encryption
     private String A3(String random, String secretKey) {
         String plainText = random + secretKey;
@@ -176,9 +183,20 @@ public class Client {
     //Used for UDP currently
     private String encrypt(String strClearText,byte[] digest) throws Exception{
         String strData="";
-        byte [] encrypted = null;
-
-        return strClearText;
+		byte [] encrypted = null;
+		
+		try {
+			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+			Cipher cipher=Cipher.getInstance("AES");
+			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
+			encrypted=cipher.doFinal(strClearText.getBytes());
+			strData=new String(encrypted, "ISO-8859-1");
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e);
+		}
+		return strData;
     }
     
     //Used for TCP connections, does not currently work for UDP
@@ -201,10 +219,21 @@ public class Client {
     }
     
     //Used for UDP currently
-    private String decrypt(String strEncrypted, byte[] digest) throws Exception{
-        String strData="";
-
-        return strEncrypted;
+    private String decrypt(byte[] strEncrypted, byte[] digest) throws Exception{
+		String strData="";
+		byte[] byteEncrypted = strEncrypted;
+		try {
+			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+			Cipher cipher=Cipher.getInstance("AES");
+			cipher.init(Cipher.DECRYPT_MODE, skeyspec);
+			byte[] decrypted=cipher.doFinal(byteEncrypted);
+			strData = new String(decrypted);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e);
+		}
+		return strData;
     }
     
     //Used for TCP connections, does not currently work for UDP
