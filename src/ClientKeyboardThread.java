@@ -42,8 +42,15 @@ public class ClientKeyboardThread extends Thread {
                             outToServerString = encrypt2(outToServerString, CK_A);
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();
-                        }else {
-                            System.out.println("Please type Log Off or Chat [Client-ID]");
+                        }
+                        else {
+                           	if(line.toUpperCase().equals("HISTORY")) {                          
+                                outToServerString = encrypt2("HISTORY_REQUEST(" + client.getSessionID() + ")", CK_A);
+                                outToServer.writeUTF(outToServerString);
+                                outToServer.flush();
+                                break;
+                            }
+                        	System.out.println("Please type Log Off or Chat [Client-ID]");
                         }
                         break;
                     case ("CHAT"):
@@ -55,12 +62,6 @@ public class ClientKeyboardThread extends Thread {
                             break;
                         }
                         else {
-                        	if(line.toUpperCase().equals("HISTORY")) {                          
-                                outToServerString = encrypt2("HISTORY_REQUEST(" + client.getSessionID() + ")", CK_A);
-                                outToServer.writeUTF(outToServerString);
-                                outToServer.flush();
-                                break;
-                            }
                         	outToServerString = encrypt2("CHAT(" + client.getSessionID() + ", " + line + ")", CK_A);
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();

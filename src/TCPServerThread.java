@@ -113,6 +113,20 @@ public class TCPServerThread implements Runnable{
                                 state = "CHAT";
                             }
                         }
+                        if(inFromClientString.contains("HISTORY_REQUEST")) {
+                            History view = new History(client);                          
+                            BufferedReader r = new BufferedReader( new FileReader( client ) );
+                            String s = "", line = null;
+                            while ((line = r.readLine()) != null) {
+                                s += line;
+                            }
+                            System.out.print(s);
+                            
+                            //HistoryString = view.printToconsole();
+                            HistoryString = encrypt(s, cc.getCKA(client));
+                            outToClient.writeUTF(HistoryString);
+                            r.close();
+                            break;}
                         break;
                     case ("CHAT"):
                         if(inFromClientString.contains("END_REQUEST")) {
@@ -132,20 +146,7 @@ public class TCPServerThread implements Runnable{
                     } 
                          else {
                             //outToClientBString = inFromClientString;
-                        	 if(inFromClientString.contains("HISTORY_REQUEST")) {
-                                 History view = new History(client);                          
-                                 BufferedReader r = new BufferedReader( new FileReader( client ) );
-                                 String s = "", line = null;
-                                 while ((line = r.readLine()) != null) {
-                                     s += line;
-                                 }
-                                 System.out.print(s);
-                                 
-                                 //HistoryString = view.printToconsole();
-                                 HistoryString = encrypt(s, cc.getCKA(client));
-                                 outToClient.writeUTF(HistoryString);
-                                 r.close();
-                                 break;}
+                        	
                                  //outToClientB.flush();
                         	 
                         	 outToClientBString = encrypt(inFromClientString, clientBCKA);
