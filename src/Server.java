@@ -1,7 +1,15 @@
 
 import java.net.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Random;
+import java.io.*;
+import java.math.BigInteger;
+import java.security.*;
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
 
 /*
  * Server class for the server based chat project
@@ -43,7 +51,7 @@ public class Server {
                 //Receive the next packet
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 serverSocket.receive(receivePacket);
-                String data = new String( receivePacket.getData());
+                String data = new String(receivePacket.getData()).trim();
                 
                 String output = data;
                 System.out.println("RECEIVED: " + data);
@@ -66,6 +74,7 @@ public class Server {
                             //CK_A.put(dataArray[1], A8(ran, secretKey));
                             cc.addXRES(dataArray[1], A3(ran, secretKey));
                             cc.addCKA(dataArray[1], A8(ran, secretKey));
+                            System.out.println(ran + secretKey);
                             output = "CHALLENGE(" + ran + ")";
                         }
                         else {
@@ -99,8 +108,9 @@ public class Server {
                 //Send a packet back
                 InetAddress returnIPAddress = receivePacket.getAddress();
                 int returnPort = receivePacket.getPort();
+                System.out.println(output);
                 sendData = output.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, returnIPAddress, returnPort);
+                DatagramPacket sendPacket = new DatagramPacket(output.getBytes(), output.getBytes().length, returnIPAddress, returnPort);
                 serverSocket.send(sendPacket);
             }catch(Exception e) {
                 System.out.println(e);
@@ -110,22 +120,68 @@ public class Server {
     
     //Performs A3 encryption
     private String A3(String random, String secretKey) {
-        //A3: RES = hash1(rand + K_A)
-        return random + secretKey;
+    	String plainText = random + secretKey;
+		MessageDigest m = null;
+		try {
+			m = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		m.reset();
+		m.update(plainText.getBytes());
+		byte[] digest = m.digest();
+		BigInteger bigInt = new BigInteger(1,digest);
+		String strData = bigInt.toString(16);
+		//Padding
+		while(strData.length() < 32 ){
+		  strData = "0"+strData;
+		}
+		//Added in due to input data from client being automatically made uppercase
+		strData = strData.toUpperCase();
+        return strData;
     }
     
     //Generate the ciphering key
-    private String A8(String random, String secretKey) {
-        //A8: CK_A = hash2(rand + K_A)
-        return random + secretKey;
-    }
-    
-    private String encrypt(String message, String CKA) {
-        return message;
-    }
+    //Generated Key needs to be 16 byte length
+    private byte[] A8(String ran, String strKey){
+    	String CK_A = ran + strKey;
+		MessageDigest m = null;
+		try {
+			m = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		m.reset();
+		m.update(CK_A.getBytes());
+		byte[] digest = m.digest();
+		return digest;
+	}
+    //Whats currently not working
+    private String encrypt(String strClearText,byte[] digest) throws Exception{
+		/*
+		 * String strData="";
+		byte [] encrypted = null;
+		
+		try {
+			SecretKeySpec skeyspec=new SecretKeySpec(digest,"AES");
+			Cipher cipher=Cipher.getInstance("AES");
+			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
+			encrypted=cipher.doFinal(strClearText.getBytes());
+			strData=new String(encrypted, "ISO-8859-1");
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e);
+		}
+		return strData;
+		 */
+		return strClearText;
+	}
     
     public static void main(String args[]){
-        Server server = null;
+        Server server = new Server(9879);
         if(args.length != 1)
             System.out.println("Use correct input of a port number");
         else
