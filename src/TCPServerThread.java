@@ -121,7 +121,7 @@ public class TCPServerThread implements Runnable{
                             clientB = inFromClientString.split("[()]")[1];
                             clientBCKA = cc.getCKA(clientB);
 
-                            if(!cc.getAvailable(clientB)) {
+                            if(clientBCKA == null || !cc.getAvailable(clientB)) {
                                 System.out.println("User " + clientB + " is not currently online, please try again later");
                                 outToClientString = "UNREACHABLE(" + clientB + ")";
                                 outToClientString = encrypt(outToClientString, cc.getCKA(client));
