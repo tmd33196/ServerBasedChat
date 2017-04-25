@@ -41,6 +41,7 @@ public class ClientServerThread extends Thread {
                     case ("REQUEST"):
                         if(inFromServerString.contains("UNREACHABLE")) {
                             System.out.println("Client " + inFromServerString.split("[()]")[1] + " is currently unreachable");
+                            client.setState("IDLE");
                         }else {
                             System.out.println("Chat started with " + inFromServerString.split("[(), ]+")[2]);
                             client.setSessionID(inFromServerString.split("[(), ]+")[1]);

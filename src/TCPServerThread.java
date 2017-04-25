@@ -44,6 +44,7 @@ public class TCPServerThread implements Runnable{
             DataInputStream inFromClient = new DataInputStream(new BufferedInputStream(connectionSocket.getInputStream()));
             DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
             cc.addStream(client, outToClient);
+            cc.setAvailable(client, true);
             
             int session = -1;
             int clientBport = -1;
@@ -85,7 +86,7 @@ public class TCPServerThread implements Runnable{
                             clientBport = cc.getPort(clientB);
                             outToClientBString = "";
                             outToClientB = cc.getStream(clientB);
-                            System.out.println(outToClientB.toString());
+                            cc.setAvailable(client, false);
                             
                             state = "CHAT";
                         }
@@ -120,7 +121,7 @@ public class TCPServerThread implements Runnable{
                             clientB = inFromClientString.split("[()]")[1];
                             clientBCKA = cc.getCKA(clientB);
 
-                            if(clientBCKA == null) {
+                            if(!cc.getAvailable(clientB)) {
                                 System.out.println("User " + clientB + " is not currently online, please try again later");
                                 outToClientString = "UNREACHABLE(" + clientB + ")";
                                 outToClientString = encrypt(outToClientString, cc.getCKA(client));
@@ -140,6 +141,7 @@ public class TCPServerThread implements Runnable{
                                 outToClientBString = "CHAT_STARTED(" + session + ", " + client + ")";
                                 outToClientBString = encrypt(outToClientBString, clientBCKA);
                                 outToClientB.writeUTF(outToClientBString);
+                                cc.setAvailable(client, false);
                                 state = "CHAT";
                             }
                         }
@@ -149,11 +151,12 @@ public class TCPServerThread implements Runnable{
                             outToClientBString = "END_NOTIF(" + session + ")";
                             outToClientBString = encrypt(outToClientBString, clientBCKA);
                             outToClientB.writeUTF(outToClientBString);
+                            cc.setAvailable(client, true);
                             state = "IDLE";
                             //outToClientB.flush();
                             break;
                         } else if(inFromClientString.contains("END_REC")) {
-                            System.out.println("Received end rec");
+                            cc.setAvailable(client, true);
                             state = "IDLE";
                         }
                         else if(inFromClientString.contains("CHAT(")){

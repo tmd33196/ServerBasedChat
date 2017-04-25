@@ -65,6 +65,7 @@ public class Server {
                             String ran = Integer.toString(random.nextInt(1000));
                             cc.addXRES(dataArray[1], A3(ran, secretKey));
                             cc.addCKA(dataArray[1], A8(ran, secretKey));
+                            cc.addAvailable(dataArray[1], false);
                             System.out.println(ran + secretKey);
                             output = "CHALLENGE(" + ran + ")";
                             outputBytes = output.getBytes();

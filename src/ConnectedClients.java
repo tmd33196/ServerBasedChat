@@ -12,6 +12,7 @@ public class ConnectedClients {
     private HashMap<String, byte[]> CK_A;
     private HashMap<String, Integer> ports;
     private HashMap<String, DataOutputStream> streams;
+    private HashMap<String, Boolean> available;
     private int session;
     
     public ConnectedClients() {
@@ -20,6 +21,7 @@ public class ConnectedClients {
         CK_A = new HashMap<>();
         ports = new HashMap<>();
         streams = new HashMap<>();
+        available = new HashMap<>();
     }
     
     public void addSecretKey(String key, String value) {
@@ -60,6 +62,18 @@ public class ConnectedClients {
     
     public DataOutputStream getStream(String key) {
         return streams.get(key);
+    }
+    
+    public void addAvailable(String key, Boolean bool) {
+        available.put(key, bool);
+    }
+    
+    public void setAvailable(String key, Boolean bool) {
+        available.replace(key, bool);
+    }
+    
+    public Boolean getAvailable(String key) {
+        return available.get(key);
     }
     
     public int getSession() {
