@@ -25,42 +25,32 @@ public class History {
         history = new HashMap<>();
     }
 
-	public void addMessage(String msg, String sender, String receiver, int session){
-		/*parts = msg.split("(,)");
-		try {
-			PrintWriter out = null;
-			File f = new File(filePath);
-			if ( f.exists() && !f.isDirectory() ) {
-				out = new PrintWriter(new FileOutputStream(new File(filePath), true));
-			
-				out.println(sender + ":" + msg + System.getProperty("line.separator"));
+    public void addMessage(String msg, String sender, String receiver, int session){
 
-				out.close();
-			}
-			else {
-				out = new PrintWriter(filePath);
+        String save = session + " From: " + sender + " To: " + receiver + " " + msg;
 
-				out.println("From:" + sender + ":" + msg +System.getProperty("file.separator"));
-
-				out.close();
-			}
-		 }catch (IOException e) {
-
-			e.printStackTrace();
-
-		}}*/
-                String save = session + " From: " + sender + " To: " + receiver + " " + msg;
-
-            if(history.get(session) != null) {
-                System.out.println("TRUE");
-                history.get(session).add(save);
-            }
-            else {
-                System.out.println("FLASE");
-                history.put(session, new ArrayList<String>());
-                history.get(session).add(save);
+        if(history.get(session) != null) {
+            System.out.println("TRUE");
+            history.get(session).add(save);
+        }
+        else {
+            System.out.println("FLASE");
+            history.put(session, new ArrayList<String>());
+            history.get(session).add(save);
+        }
+    }
+    
+    public ArrayList<String> getHistory(String clientA, String clientB) {
+        ArrayList<String> arr = new ArrayList<>();
+        for(Entry<Integer, ArrayList<String>> s : history.entrySet()) {
+            for(String str : s.getValue()) {
+                if(str.contains("From: " + clientA) && str.contains("To: " + clientB) || str.contains("From: " + clientB) && str.contains("To: " + clientA)) {
+                    arr.add(str);
+                }
             }
         }
+        return arr;
+    }
         
         
     public String printToconsole(){

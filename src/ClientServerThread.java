@@ -33,6 +33,8 @@ public class ClientServerThread extends Thread {
                             client.setSessionID(inFromServerString.split("[(), ]+")[1]);
                             client.setState("CHAT");
                             client.startChat(inFromServerString);
+                        } else if(inFromServerString.contains("HISTORY_RESP")) {
+                            System.out.println(inFromServerString.substring(inFromServerString.indexOf("(") + 1, inFromServerString.length() - 1));
                         }
                         
                         break;

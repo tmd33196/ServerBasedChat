@@ -4,6 +4,8 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -96,11 +98,19 @@ public class TCPServerThread implements Runnable{
                                  }
                                  System.out.print(s);
                                  */
-                                 String historyString = history.printToconsole();
-                                 System.out.println(historyString);
+                                 System.out.println("Getting history for " + client + " and " + inFromClientString.split("[()]")[1]);
+                                 ArrayList<String> historyArr = history.getHistory(client, inFromClientString.split("[()]")[1]);
+                                 for(String s : historyArr) {
+                                     System.out.println(s);
+                                     
+                                    outToClientString = "HISTORY_RESP(" + s + ")";
+                                    outToClientString = encrypt(outToClientString, cc.getCKA(client));
+                                    outToClient.writeUTF(outToClientString);
+                                    outToClient.flush();
+                                 }
                                  //HistoryString = view.printToconsole();
-                                 HistoryString = encrypt(historyString, cc.getCKA(client));
-                                 outToClient.writeUTF(HistoryString);
+                                 //HistoryString = encrypt(historyString, cc.getCKA(client));
+                                 //outToClient.writeUTF(HistoryString);
                                  //r.close();
                                  break;
                                  //outToClientB.flush();
@@ -139,7 +149,6 @@ public class TCPServerThread implements Runnable{
                             outToClientBString = "END_NOTIF(" + session + ")";
                             outToClientBString = encrypt(outToClientBString, clientBCKA);
                             outToClientB.writeUTF(outToClientBString);
-                            System.out.println("send end req to client b");
                             state = "IDLE";
                             //outToClientB.flush();
                             break;

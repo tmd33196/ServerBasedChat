@@ -57,7 +57,6 @@ public class ClientKeyboardThread extends Thread {
                             outToServerString = encrypt2("END_REQUEST(" + client.getSessionID() + ")", CK_A);
                             outToServer.writeUTF(outToServerString);
                             outToServer.flush();
-                            System.out.println("Send end request");
                             break;
                         }
                         else {
@@ -92,7 +91,6 @@ public class ClientKeyboardThread extends Thread {
         try {
             client.setState("IDLE");
             String outToServerString = message.replace("END_NOTIF", "END_REC");
-            System.out.println("Send other end request" + outToServerString);
             outToServerString = encrypt2(outToServerString, CK_A);
             outToServer.writeUTF(outToServerString);
             outToServer.flush();

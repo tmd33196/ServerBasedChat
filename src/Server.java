@@ -25,6 +25,8 @@ public class Server {
         ConnectedClients cc = new ConnectedClients();
         cc.addSecretKey("A", "1234");
         cc.addSecretKey("B", "1234");
+        cc.addSecretKey("C", "1234");
+        cc.addSecretKey("D", "1234");
         history = new History();
         
         try {
