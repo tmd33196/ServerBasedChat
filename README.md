@@ -17,3 +17,13 @@ and
 
 javac Client.java
 java Client A 1234 localhost 9879
+
+Clients include A-J, all secret keys are 1234
+
+Commands include:
+log on- start the log on process
+Chat [client-id]- start a chat with another client
+while chatting typeing and send messages
+End Chat- end your current chat session
+History [Client-id]- get the history with a certian client
+log off- end you session
